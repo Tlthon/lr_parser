@@ -64,7 +64,7 @@ fn main() {
     let input_vec: Vec<char> = format!("(1)+1{}",syntax::END_TERMINAL).chars().collect();
     let mut parser = ParsingProcess::new(&input_vec);
     loop {
-        if let Some(end) = parser.run(&machine){
+        if let Some(_) = parser.run(&machine){
             break;
         }
         let mut buffer = String::new();
