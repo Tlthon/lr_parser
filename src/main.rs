@@ -1,4 +1,6 @@
-use crate::{parsingtable::StateMachine, syntax::Rule, parsing::solving, itemset::ItemSets};
+use std::io;
+
+use crate::{parsingtable::StateMachine, syntax::Rule, parsing::ParsingProcess, itemset::ItemSets};
 pub mod itemset;
 pub mod syntax;
 mod parsingtable;
@@ -8,7 +10,6 @@ pub mod ruledepend;
 fn main() {
 
     let mut itemset = ItemSets::new();
-    // let mut itemset = ;
     {
         let mut rule = Rule::new(syntax::END_VARIABLE);
         rule.add_variable('E');
@@ -60,8 +61,15 @@ fn main() {
     let machine = StateMachine::from_itemset(itemset);
     println!("{}", machine);
 
-    // println!("{}", machine);
     let input_vec: Vec<char> = format!("(1)+1{}",syntax::END_TERMINAL).chars().collect();
-    solving(&input_vec, machine)
-       
+    let mut parser = ParsingProcess::new(&input_vec);
+    loop {
+        if let Some(end) = parser.run(&machine){
+            break;
+        }
+        let mut buffer = String::new();
+        io::stdin().read_line(&mut buffer).unwrap();
+    }
+    // solving(&input_vec, machine)
+    
 }

@@ -1,42 +1,50 @@
 use crate::{parsingtable::StateMachine, syntax::{MixedString, TerminalString}};
 
-pub fn solving(input: &[char], machine: StateMachine) {
-    let input = TerminalString::from(input);
-    let mut string_index:usize = 0;
-    let mut state_index:usize = 0;
-    let mut output: MixedString = MixedString::new();
-    let mut stack: Vec<usize> = vec![0];
+pub struct ParsingProcess{
+    input: TerminalString,
+    string_index: usize,
+    state_index: usize,
+    output: MixedString,
+    stack: Vec<usize>
+}
 
-    loop{
-        let action = machine.next(state_index, input.get(string_index).map(Into::into));
+impl ParsingProcess {
+    pub fn new(input: &[char]) -> ParsingProcess{
+        let input = TerminalString::from(input);
+
+        ParsingProcess { input ,string_index: 0, state_index: 0, output: MixedString::new(), stack: vec![0] }
+    }
+    pub fn run(&mut self, machine: &StateMachine) -> Option<bool>{
+        let action = machine.next(self.state_index, self.input.get(self.string_index).map(Into::into));
         match action {
             crate::parsingtable::Action::Accept => {
-                println!("{} {:?} {:?} {}",state_index ,output ,&input[string_index..], "Accept");
-                return;
+                println!("{} {:?} {:?} {}",self.state_index ,self.output ,&self.input[self.string_index..], "Accept");
+                return Some(true);
 
             },
             crate::parsingtable::Action::Reject => {
-                println!("{} {:?} {:?} {}",state_index ,output ,&input[string_index..], "Reject");
-                return;
+                println!("{} {:?} {:?} {}",self.state_index ,self.output ,&self.input[self.string_index..], "Reject");
+                return Some(false);
             },
             crate::parsingtable::Action::Shift(next) => {
-                println!("{} {:?} {:?} {}",state_index ,output ,&input[string_index..], "Shift");
-                output.push_terminal(input.get(string_index).unwrap());
-                string_index+=1;
-                state_index = next;
-                stack.push(state_index);
+                println!("{} {:?} {:?} {}",self.state_index ,self.output ,&self.input[self.string_index..], "Shift");
+                self.output.push_terminal(self.input.get(self.string_index).unwrap());
+                self.string_index+=1;
+                self.state_index = next;
+                self.stack.push(self.state_index);
             },
             crate::parsingtable::Action::Reduce(variable, pop_count) => {
-                println!("{} {:?} {:?} {}",state_index ,output ,&input[string_index..], "Reduce");
+                println!("{} {:?} {:?} {}",self.state_index ,self.output ,&self.input[self.string_index..], "Reduce");
                 for _ in 0..pop_count{
-                    output.pop();
-                    stack.pop();
+                    self.output.pop();
+                    self.stack.pop();
     
                 }
-                output.push_variable(variable);
-                state_index = machine.reduce_state(*stack.last().unwrap(), variable);
-                stack.push(state_index);
+                self.output.push_variable(variable);
+                self.state_index = machine.reduce_state(*self.stack.last().unwrap(), variable);
+                self.stack.push(self.state_index);
             }
         }
+        return None;    
     }
 }

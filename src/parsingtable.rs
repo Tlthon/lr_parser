@@ -20,13 +20,6 @@ impl State {
     fn check_variable(&self, variable: &Variable) -> Option<usize>{
         self.next.get(&MixedChar::Variable(*variable)).copied()
     }
-    // fn check(&self, terminal: &MixedChar) -> Option<usize>{
-    //     self.next.get(terminal).copied()
-    // }
-
-    // fn add_next(&mut self, char: MixedChar, next_state: usize) {
-    //     self.next.insert(char, next_state);
-    // }
 }
 
 pub enum Action{
@@ -105,36 +98,6 @@ impl StateMachine {
                 machine.states[id].reduce = Some((variable, dot));
             }
         }
-
         machine
     }
-
-    // pub fn add_rule(&mut self, rule:Rule) {
-    //     let rule_len = rule.len();
-        
-    //     let char_list = rule.output;
-    //     // self.firsts.insert(rule.clause, rule_len);
-    //     let mut cur_state_num = 0;
-    //     for chr in char_list.data{
-    //         if let MixedChar::Variable(variable) = chr {
-    //             // if cur_state_num != 0 {
-    //             //     self.monitors.insert(variable, cur_state_num);
-    //             // }
-
-    //             // for shift_state in self.firsts.get_iter(variable) {
-    //             //     self.states[cur_state_num].add_next(chr, *shift_state);
-    //             // }
-    //         }
-    //         if let Some(next_state_num) = self.states[cur_state_num].check(&chr) {
-    //             cur_state_num = next_state_num;
-    //             continue;
-    //         }
-    //         let next_state_num = self.states.len();
-    //         self.states[cur_state_num].add_next(chr, next_state_num);
-    //         self.states.push(State::new());
-    //         cur_state_num = next_state_num;
-    //     }
-        
-    //     self.states[cur_state_num].reduce = Some((rule.clause, rule_len));
-    // }
 }
