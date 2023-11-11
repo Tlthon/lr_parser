@@ -139,7 +139,7 @@ impl Debug for MixedString {
     }
 }
 
-
+#[derive(Clone)]
 pub struct TerminalString{
     pub data: Vec<Terminal>
 }
