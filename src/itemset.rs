@@ -1,9 +1,9 @@
-use std::{collections::BTreeSet, fmt::Display, usize};
+use std::{collections::{BTreeSet, VecDeque, HashSet}, fmt::Display, usize};
 pub const DOT: char = '•';
 
 use crate::{syntax::{Rule, MixedChar, Variable}, ruledepend::RuleGraph};
 
-#[derive(Hash, PartialEq, Eq, Clone)]
+#[derive(Hash, PartialEq, Eq, Clone, Debug)]
 pub struct Item{
     rule_number: usize,
     dot: usize
@@ -26,7 +26,7 @@ impl Item {
     }
 }
 
-#[derive(Hash,Eq,PartialEq,Clone)]
+#[derive(Hash,Eq,PartialEq,Clone, Debug)]
 pub struct ItemSet{
     items: Vec<Item>,
     symbols: BTreeSet<MixedChar>,
@@ -87,40 +87,42 @@ impl ItemSet {
     } 
 }
 pub struct ItemSets {
-    pub itemset: Vec<ItemSet>,
+    pub itemset: HashSet<ItemSet>,
     pub rules: Vec<Rule>
 }
 
 impl ItemSets {
     pub fn new() -> Self {
-        Self { itemset: vec![ItemSet::new()], rules: Vec::default() }
+        Self { itemset: HashSet::new(), rules: Vec::default() }
     }
     pub fn add_rule(&mut self, rule: Rule) {
-        self.itemset[0].add_rule(&rule, 0, self.rules.len());
+        // self.itemset[0].add_rule(&rule, 0, self.rules.len());
         self.rules.push(rule);
     }
 
     pub fn generate_next(&mut self){
-        let mut i = 0;
         let rulegraph = RuleGraph::new(self.rules.clone());
-        while i < self.itemset.len() {
-            let symbols = & mut self.itemset[i].symbols.clone();
-            if i != 0 {
-                let kernellist: Vec<usize> = rulegraph.gets_rule(symbols.iter().filter_map(|symbol| symbol.try_variable()));
-                for kernel in kernellist {
-                    self.itemset[i].add_rule(&self.rules[kernel], 0, kernel)
-                }
+        let mut new_item = VecDeque::new();
+        let mut first_item = ItemSet::new();
+        first_item.add_rule(&self.rules[0], 0, 0);
+        new_item.push_back(first_item);
+        while let Some(mut cur_item) = new_item.pop_front() {
+            let kernellist: Vec<usize> = rulegraph.gets_rule(cur_item.symbols.iter().filter_map(|symbol| symbol.try_variable()));
+            for kernel in kernellist {
+                cur_item.add_rule(&self.rules[kernel], 0, kernel)
             }
-
+            let symbols = & mut cur_item.symbols.clone();
+            if self.itemset.contains(&cur_item) {
+                continue;
+            }
             for transchar in symbols.iter(){
-                let new_itemset = self.itemset[i].transitions(*transchar, &self.rules);
+                let new_itemset = cur_item.transitions(*transchar, &self.rules);
                 if let Some(new_itemset) = new_itemset {
-                    self.itemset.push(new_itemset);
+                    new_item.push_back(new_itemset);
                 }
             }
 
-            i = i+1;
-
+            self.itemset.insert(cur_item);
         }
     }
 }

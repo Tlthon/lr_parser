@@ -68,7 +68,6 @@ impl ParsingProcess {
                 for _ in 0..pop_count{
                     next_step.output.pop();
                     next_step.stack.pop();
-    
                 }
                 next_step.output.push_variable(variable);
                 next_step.state_index = machine.reduce_state(*next_step.stack.last().unwrap(), variable);
@@ -98,6 +97,6 @@ pub struct PrintingString<'temp>{
 
 impl Display for PrintingString<'_>{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} {:?} {:?} {}",self.process.state_index ,self.process.output ,&self.process.input[self.process.string_index..], self.action)
+        write!(f, "{} {:?} {:?} {:?} {}",self.process.state_index, self.process.stack ,self.process.output ,&self.process.input[self.process.string_index..], self.action)
     }
 }

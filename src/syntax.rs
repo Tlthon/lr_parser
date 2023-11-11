@@ -60,7 +60,7 @@ impl Debug for Variable {
 
 
 
-#[derive(Hash, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
+#[derive(Hash, PartialEq, Eq, Clone, Copy, PartialOrd, Ord, Debug)]
 pub enum MixedChar{
     Terminal(Terminal),
     Variable(Variable)
