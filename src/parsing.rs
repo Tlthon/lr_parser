@@ -25,18 +25,15 @@ impl ParsingProcess {
 
             },
             crate::parsingtable::Action::Reject => {
-                // println!("{} {:?} {:?} {}",self.state_index ,self.output ,&self.input[self.string_index..], "Reject");
                 return Some(false);
             },
             crate::parsingtable::Action::Shift(next) => {
-                // println!("{} {:?} {:?} {}",self.state_index ,self.output ,&self.input[self.string_index..], "Shift");
                 self.output.push_terminal(self.input.get(self.string_index).unwrap());
                 self.string_index+=1;
                 self.state_index = next;
                 self.stack.push(self.state_index);
             },
             crate::parsingtable::Action::Reduce(variable, pop_count) => {
-                // println!("{} {:?} {:?} {}",self.state_index ,self.output ,&self.input[self.string_index..], "Reduce");
                 for _ in 0..pop_count{
                     self.output.pop();
                     self.stack.pop();
@@ -49,6 +46,38 @@ impl ParsingProcess {
         }
         return None;    
     }
+
+    pub fn get_next(&self, machine: &StateMachine) -> Option<Self>{
+        let action = machine.next(self.state_index, self.input.get(self.string_index).map(Into::into));
+        let mut next_step = self.clone();
+        match action {
+            crate::parsingtable::Action::Accept => {
+                return None;
+
+            },
+            crate::parsingtable::Action::Reject => {
+                return None;
+            },
+            crate::parsingtable::Action::Shift(next) => {
+                next_step.output.push_terminal(next_step.input.get(next_step.string_index).unwrap());
+                next_step.string_index+=1;
+                next_step.state_index = next;
+                next_step.stack.push(next_step.state_index);
+            },
+            crate::parsingtable::Action::Reduce(variable, pop_count) => {
+                for _ in 0..pop_count{
+                    next_step.output.pop();
+                    next_step.stack.pop();
+    
+                }
+                next_step.output.push_variable(variable);
+                next_step.state_index = machine.reduce_state(*next_step.stack.last().unwrap(), variable);
+                next_step.stack.push(next_step.state_index);
+            }
+        }
+        return Some(next_step);    
+    }
+
 
     pub fn display<'a>(&'a self, machine: &'a StateMachine) -> PrintingString {
         let action = machine.next(self.state_index, self.input.get(self.string_index).map(Into::into));

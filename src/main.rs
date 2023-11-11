@@ -43,13 +43,14 @@ fn main() {
         rule.add_terminal('0');
         itemset.add_rule(rule);
     }
-    // {
-    //     let mut rule = Rule::new('E');
-    //     rule.add_terminal('(');
-    //     rule.add_variable('E');
-    //     rule.add_terminal(')');
-    //     itemset.add_rule(rule);
-    // }
+    {
+        let mut rule = Rule::new('E');
+        rule.add_terminal('(');
+        rule.add_variable('E');
+        rule.add_terminal(')');
+        itemset.add_rule(rule);
+    }
+
 
 
     itemset.generate_next();
@@ -59,15 +60,37 @@ fn main() {
     let machine = StateMachine::from_itemset(itemset);
     println!("{}", machine);
 
-    let input_vec: Vec<char> = format!("1+1*0{}",syntax::END_TERMINAL).chars().collect();
-    let mut parser = ParsingProcess::new(&input_vec);
+    let input_vec: Vec<char> = format!("(1){}",syntax::END_TERMINAL).chars().collect();
+    let parser = ParsingProcess::new(&input_vec);
     let g = getch_rs::Getch::new();
+    let mut history = vec![parser];
     loop {
-        println!("{}", parser.display(&machine));
-        let a = parser.run(&machine);
-        if let Some(_) = a{
-            break;
+        // println!("{}", parser.display(&machine));
+        for parser in &history {
+            println!("{}", parser.display(&machine));
         }
-        let _ = g.getch().unwrap();
+        let Some(next_step) = history.last().unwrap().get_next(&machine) else {
+            break;
+        };
+
+        history.push(next_step);
+
+        if let Ok(symbol) = g.getch() {
+            if symbol == getch_rs::Key::Left{
+                history.pop();
+                if history.len() > 1{
+                    history.pop();
+                }
+            }
+            else if symbol == getch_rs::Key::Right{
+            }
+            else{
+                break;
+            }
+        }
+
+
+        print!("{}[2J", 27 as char);
+
     }
 }

@@ -105,18 +105,20 @@ impl ItemSets {
         let rulegraph = RuleGraph::new(self.rules.clone());
         while i < self.itemset.len() {
             let symbols = & mut self.itemset[i].symbols.clone();
-            for transchar in symbols.iter(){
-                let new_itemset = self.itemset[i].transitions(*transchar, &self.rules);
-                if let Some(new_itemset) = new_itemset {
-                    self.itemset.push(new_itemset);
-                }
-            }
             if i != 0 {
                 let kernellist: Vec<usize> = rulegraph.gets_rule(symbols.iter().filter_map(|symbol| symbol.try_variable()));
                 for kernel in kernellist {
                     self.itemset[i].add_rule(&self.rules[kernel], 0, kernel)
                 }
             }
+
+            for transchar in symbols.iter(){
+                let new_itemset = self.itemset[i].transitions(*transchar, &self.rules);
+                if let Some(new_itemset) = new_itemset {
+                    self.itemset.push(new_itemset);
+                }
+            }
+
             i = i+1;
 
         }
