@@ -83,17 +83,15 @@ impl StateMachine {
     }
     pub fn from_itemset(sets: ItemSets) -> Self {
         let mut machine = Self{
-            states: vec![State::new(); sets.itemset.len()]
+            states: vec![State::new(); sets.itemsets.len()]
         };
-        for (id1, set1) in sets.itemset.iter().enumerate() {
-            for (id2, set2) in sets.itemset.iter().enumerate() {
-                if let Some(shift) = set1.is_previous(&sets.rules, &set2) {
-                    machine.states[id1].next.insert(shift, id2);
-                }
-            }
+        for (current_state, next_states) in sets.ordering_map.iter().enumerate() {
+            next_states.iter().for_each(|(k, v)| {
+                machine.states[current_state].next.insert(*k, *v);
+            })
         }
 
-        for (id, set) in sets.itemset.iter().enumerate() {
+        for (id, set) in sets.itemsets.iter().enumerate() {
             if let Some((dot, variable)) = set.reduce(&sets.rules) {
                 machine.states[id].reduce = Some((variable, dot));
             }
