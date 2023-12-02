@@ -90,6 +90,13 @@ impl StateMachine {
 
         for (id, set) in sets.itemsets.iter().enumerate() {
             if let Some((dot, variable)) = set.reduce(&sets.rules) {
+                if !machine.states[id].next.is_empty(){
+                    println!("Found shift-reduce conflict in state {}", id)
+                }
+                if machine.states[id].reduce != None{
+                    println!("Found reduce-reduce conflict in state {}", id)
+                }
+
                 machine.states[id].reduce = Some((variable, dot));
             }
         }
