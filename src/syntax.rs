@@ -229,6 +229,43 @@ impl Rule {
     }
 }
 
+impl TryFrom<&str> for Rule {
+    type Error = ();
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        let mut list = value.chars();
+        let Some(first) = list.next() else {
+            return Err(());
+        };
+        if !first.is_ascii_uppercase() {
+            return Err(());
+        }
+        let mut rule = Rule::new(first);
+        if let Some(separator) = list.next() {
+            if separator != ':' {
+                return Err(());
+            }
+        }
+        while let Some(output) = list.next() {
+            if output.is_ascii_uppercase() {
+                rule.add_variable(output)
+            }
+            else {
+                rule.add_terminal(output)
+            }
+        }
+        Ok(rule)
+    }
+}
+
+impl Display for Rule {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "{}:", self.clause)?;
+        write!(f, "{}", self.output)?;
+        Ok(())
+    }
+}
+
 pub struct Rules{
     pub rules: Vec<Rule>
 }

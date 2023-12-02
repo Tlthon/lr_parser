@@ -94,6 +94,23 @@ pub struct PrintingString<'temp>{
     process: &'temp ParsingProcess,
     action: &'static str
 }
+use prettytable::{Cell, Row};
+
+
+impl PrintingString<'_> {
+    pub fn get_row(&self, index: usize) -> Row{
+        Row::new(vec![
+            Cell::new(&index.to_string()),
+            Cell::new(&format!("{:?}",self.process.state_index)),
+            Cell::new(&format!("{:?}",self.process.stack)),
+            Cell::new(&format!("{:?}",self.process.output)),
+            Cell::new(&format!("{:?}",&self.process.input[self.process.string_index..])),
+            Cell::new(self.action),
+        ])
+        // write!(f, "{} {:?} {:?} {:?} {}",self.process.state_index, self.process.stack ,self.process.output ,&self.process.input[self.process.string_index..], self.action)
+    }
+
+}
 
 impl Display for PrintingString<'_>{
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

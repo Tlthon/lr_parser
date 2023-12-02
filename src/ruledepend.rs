@@ -1,4 +1,3 @@
-#![allow(dead_code)]
 use std::{collections::{BTreeSet, HashMap}, cmp::min, usize};
 
 use crate::syntax::{Rule, Variable};
@@ -10,6 +9,8 @@ fn is_connect(edges: & [Rule], nodes: & [Variable], u: usize, v:usize) -> bool {
     edges.iter().filter(|e| {e.clause == nodes[u] && e.output.data[0] == nodes[v].into()}).peekable().peek().is_some()
 }
 
+/// Tarjan's Algorithm
+/// https://doi.org/10.1137/0201010
 struct Tarjan <'tarjan>{
     edges: &'tarjan [Rule],
     nodes: &'tarjan [Variable],
@@ -55,11 +56,13 @@ impl <'tarjan> Tarjan <'tarjan> {
         self.stack.push(u);
         self.on_stacks[u] = true;
         for v in Self::get_connect(self.edges, &self.nodes, self.len, u) {
-            if self.indexs[v] == None {
-                self.strongconnect(v);
+            let Some(v_index) = self.indexs[v] else {
+                self._strongconnect(v);
                 self.lowlinks[u] = min(self.lowlinks[u], self.lowlinks[v]);
-            } else if self.on_stacks[v] {
-                self.lowlinks[u] = min(self.lowlinks[u], self.lowlinks[v]);
+                continue;
+            };
+            if self.on_stacks[v] {
+                self.lowlinks[u] = min(self.lowlinks[u], v_index);
             }
         }
     }
@@ -114,6 +117,8 @@ impl RuleGraph {
         let variables:Set<Variable> = rules.iter().map(|rule| rule.clause).collect();
         let variables:Vec<Variable> = variables.iter().map(|x| *x).collect();
         let node_group = Tarjan::new(&rules, &variables).run();
+        println!("{:?} {:?}", variables, node_group);
+
         let indexing = node_group.iter().enumerate().fold(Map::new(), |mut map: Map<Variable, usize>, (id, variable_set)|{
             variable_set.iter().for_each(|variable_id| {map.insert(variables[*variable_id],  id);});
             map

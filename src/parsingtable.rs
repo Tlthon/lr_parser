@@ -65,21 +65,18 @@ impl StateMachine {
 
     pub fn next(&self, index: usize, rest: Option<Terminal>) -> Action {
         let cur_state = &self.states[index];
+        if let Some(current) = rest { 
+            if let Some(next) = cur_state.check_terminal(&current) {
+                return Action::Shift(next);
+            }
+        }
         if let Some((reduceval, reduce_state)) = cur_state.reduce{
             if reduceval.symbol == syntax::END_VARIABLE {
                 return Action::Accept;
             }
             return Action::Reduce(reduceval, reduce_state)
         }
-        let Some(current) = rest else { 
-            // If there is no next character, reject
-            return Action::Reject;
-        };
-        let Some(next) = cur_state.check_terminal(&current) else { 
-            // If the next character do not lead anywhere, reject
-            return Action::Reject;
-        };
-        return Action::Shift(next);
+        return Action::Reject;
     }
     pub fn from_itemset(sets: ItemSets) -> Self {
         let mut machine = Self{
