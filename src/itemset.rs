@@ -76,10 +76,10 @@ impl ItemSet {
         return None;
     }
 
-    pub fn reduce<'a>(&'a self, rules:&'a [Rule]) -> impl Iterator<Item = (usize, Variable)> + 'a {
+    pub fn reduce<'a>(&'a self, rules:&'a [Rule]) -> impl Iterator<Item = Rule> + 'a {
         self.items.iter().filter_map(|item| {
             match item.is_end(rules) {
-                true => Some((item.dot, rules[item.rule_number].clause)),
+                true => Some(rules[item.rule_number].clone()),
                 false => None,
             }
         })

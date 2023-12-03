@@ -60,7 +60,7 @@ impl Debug for Variable {
 
 
 
-#[derive(Hash, PartialEq, Eq, Clone, Copy, PartialOrd, Ord, Debug)]
+#[derive(Hash, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 pub enum MixedChar{
     Terminal(Terminal),
     Variable(Variable)
@@ -81,6 +81,15 @@ impl From<Variable> for MixedChar {
 }
 
 impl Display for MixedChar {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            MixedChar::Terminal(t) => write!(f, "{}", t),
+            MixedChar::Variable(v) => write!(f, "{}", v),
+        }
+    }
+}
+
+impl Debug for MixedChar {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
             MixedChar::Terminal(t) => write!(f, "{}", t),

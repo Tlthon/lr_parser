@@ -1,10 +1,10 @@
 use std::{collections::HashMap, fmt::Display};
-use crate::{syntax::{Terminal, Variable, MixedChar, self}, itemset::ItemSets};
+use crate::{syntax::{Terminal, Variable, MixedChar, self, Rule}, itemset::ItemSets};
 
 #[derive(Clone)]
 pub struct State{ 
     pub next: HashMap<MixedChar, usize>,
-    pub reduce: Option<(Variable, usize)>
+    pub reduce: Option<Rule>
 }
 
 impl State {
@@ -37,7 +37,8 @@ impl Display for StateMachine {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (index, state) in self.states.iter().enumerate(){
             write!(f, "{}: ", index)?;
-            if let Some((reduced_var, _reduce_state)) = state.reduce {
+            if let Some(rule) = &state.reduce {
+                let reduced_var = rule.clause;
                 if reduced_var.symbol == syntax::END_VARIABLE{
                     write!(f, "accept\n")?;
                     continue;
@@ -70,7 +71,9 @@ impl StateMachine {
                 return Action::Shift(next);
             }
         }
-        if let Some((reduceval, reduce_state)) = cur_state.reduce{
+        if let Some(rule) = &cur_state.reduce{
+            let reduceval = rule.clause;
+            let reduce_state = rule.len(); 
             if reduceval.symbol == syntax::END_VARIABLE {
                 return Action::Accept;
             }
@@ -89,15 +92,16 @@ impl StateMachine {
         }
 
         for (id, set) in sets.itemsets.iter().enumerate() {
-            for (dot, variable) in set.reduce(&sets.rules) {
+            for rule in set.reduce(&sets.rules) {
                 if !machine.states[id].next.is_empty(){
-                    println!("Found shift-reduce conflict in state {}", id)
+                    println!("Found shift-reduce conflict in state {} from rule {} and shift from {:?}", id, rule, machine.states[id].next.keys())
+                    
                 }
-                if machine.states[id].reduce != None{
-                    println!("Found reduce-reduce conflict in state {}", id)
+                if let Some(current_rule) = &machine.states[id].reduce{
+                    println!("Found reduce-reduce conflict in state {} between rule {} and {}", id, current_rule, rule)
                 }
 
-                machine.states[id].reduce = Some((variable, dot));
+                machine.states[id].reduce = Some(rule);
             }
         }
         machine
