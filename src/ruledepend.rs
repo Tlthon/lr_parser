@@ -44,12 +44,13 @@ impl <'tarjan> Tarjan <'tarjan> {
         let mut scc:Vec<Set<usize>> = Vec::new();
         for u in 0..self.len {
             if self.indexs[u] == None {
-                scc.push(self.strongconnect(u));
+                scc.append(&mut self.strongconnect(u));
             }
         }
         scc
     }
-    fn _strongconnect(&mut self, u: usize){
+    fn strongconnect(&mut self, u: usize) -> Vec<Set<usize>> {
+        let mut output = vec![];
         self.indexs[u] = Some(self.index);
         self.lowlinks[u] = self.index;
         self.index = self.index + 1;
@@ -57,7 +58,7 @@ impl <'tarjan> Tarjan <'tarjan> {
         self.on_stacks[u] = true;
         for v in Self::get_connect(self.edges, &self.nodes, self.len, u) {
             let Some(v_index) = self.indexs[v] else {
-                self._strongconnect(v);
+                output.append(&mut self.strongconnect(v));
                 self.lowlinks[u] = min(self.lowlinks[u], self.lowlinks[v]);
                 continue;
             };
@@ -65,18 +66,18 @@ impl <'tarjan> Tarjan <'tarjan> {
                 self.lowlinks[u] = min(self.lowlinks[u], v_index);
             }
         }
-    }
-    fn strongconnect(&mut self, u: usize) -> Set<usize> {
-        self._strongconnect(u);
-        let mut scc: Set<usize> = Set::new();
-        while let Some(v) = self.stack.pop() {
-            self.on_stacks[v] = false;
-            scc.insert(v);
-            if v == u {
-                break;
+        if Some(self.lowlinks[u]) == self.indexs[u] {
+            let mut scc: Set<usize> = Set::new();
+            while let Some(v) = self.stack.pop() {
+                self.on_stacks[v] = false;
+                scc.insert(v);
+                if v == u {
+                    break;
+                }
             }
+            output.push(scc);
         }
-        return scc;
+        return output;
     }   
 }
 
