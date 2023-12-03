@@ -17,12 +17,12 @@ impl ParsingProcess {
 
         ParsingProcess { input ,string_index: 0, state_index: 0, output: MixedString::new(), stack: vec![0] }
     }
+    #[allow(unused)]
     pub fn run(&mut self, machine: &StateMachine) -> Option<bool>{
         let action = machine.next(self.state_index, self.input.get(self.string_index).map(Into::into));
         match action {
             crate::parsingtable::Action::Accept => {
                 return Some(true);
-
             },
             crate::parsingtable::Action::Reject => {
                 return Some(false);
@@ -53,7 +53,6 @@ impl ParsingProcess {
         match action {
             crate::parsingtable::Action::Accept => {
                 return None;
-
             },
             crate::parsingtable::Action::Reject => {
                 return None;

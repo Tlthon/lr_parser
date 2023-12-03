@@ -52,7 +52,14 @@ fn main() {
         rule.add_terminal(')');
         itemset.add_rule(rule);
     }
-    
+    // {
+    //     let mut rule = Rule::new('E');
+    //     rule.add_terminal('(');
+    //     rule.add_variable('E');
+    //     rule.add_terminal(')');
+    //     itemset.add_rule(rule);
+    // }
+
     itemset.generate_next();
 
     println!("{}",itemset);

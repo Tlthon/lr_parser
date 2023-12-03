@@ -76,13 +76,13 @@ impl ItemSet {
         return None;
     }
 
-    pub fn reduce(&self, rules:&[Rule]) -> Option<(usize, Variable)> {
-        for item in &self.items {
-            if item.is_end(rules) {
-                return Some((item.dot, rules[item.rule_number].clause));
+    pub fn reduce<'a>(&'a self, rules:&'a [Rule]) -> impl Iterator<Item = (usize, Variable)> + 'a {
+        self.items.iter().filter_map(|item| {
+            match item.is_end(rules) {
+                true => Some((item.dot, rules[item.rule_number].clause)),
+                false => None,
             }
-        }
-        None
+        })
     } 
 }
 pub struct ItemSets {
