@@ -1,29 +1,25 @@
-use std::{collections::{HashMap, HashSet}, ops::BitOr};
+use std::collections::{HashMap, HashSet};
 
-use once_cell::sync::Lazy;
+use crate::{syntax::{Variable, Terminal, Rule}, ruledepend::RuleGraph, mapset::MapSet};
 
-use crate::{syntax::{Variable, Terminal, Rule}, ruledepend::RuleGraph};
+fn track_adding(current_val: &Variable, track: &MapSet<Variable, Variable>, visited: &mut HashSet<Variable>, map: &mut MapSet<Variable, Terminal>) {
+    if visited.contains(current_val) {
+        return;
+    }
+    visited.insert(*current_val);
+    for next_variable in track.get(current_val) {
+        track_adding(next_variable, track, visited, map);
+        map.join(*current_val,* next_variable);
+    }
+    
+}
+
 
 #[derive(Default)]
 pub struct First{
-    map: HashMap<Variable, HashSet<Terminal>>
+    map: MapSet<Variable, Terminal>
 }
-
-static EMPTY_SET: Lazy<HashSet<Terminal>> = Lazy::new(|| {HashSet::new()}); 
-
 impl First {
-    fn add(&mut self, variable: Variable, terminal: Terminal) {
-        self.map.entry(variable).or_default().insert(terminal);
-    }
-    fn join(&mut self, output: Variable, source: Variable) {
-        let first = self.map.get(&source).unwrap_or(&EMPTY_SET);
-        let second = self.map.get(&output).unwrap_or(&EMPTY_SET);
-        self.map.insert(output, first.bitor(second));
-    }
-    fn set(&mut self, variable: Variable, set: HashSet<Terminal>) {
-        self.map.insert(variable, set);
-    }
-
     pub fn from_rule(rule:&[Rule], rule_graph: &RuleGraph) -> Self {
         let mut first_set = Self::default();
         let rule_tuple = rule.iter()
@@ -31,7 +27,7 @@ impl First {
                 Some((rule.clause, rule.output.data.first()?.try_terminal()?))
             });
         for (variable, terminal) in rule_tuple {
-            first_set.add(variable, terminal);
+            first_set.map.add(variable, terminal);
         }
 
         for mut varset in rule_graph.toposort(){
@@ -39,18 +35,20 @@ impl First {
                 continue;
             };
             for depend_var in rule_graph.get(firstvar) {
-                first_set.join(firstvar, depend_var)
+                first_set.map.join(firstvar, depend_var)
             }
-            let true_terminal = first_set.map.get(&firstvar).unwrap().clone();
+            let true_terminal = first_set.map.get(&firstvar).clone();
             for var in varset {
-                first_set.set(var, true_terminal.clone());
+                first_set.map.set(var, true_terminal.clone());
             }
         }
         first_set
     }
 
     pub fn print(&self) {
-        for (var, terminals) in &self.map {
+        println!("First set");
+
+        for (var, terminals) in self.map.iter() {
             println!("{} {:?}", var, terminals);
         }
     }
@@ -58,15 +56,46 @@ impl First {
 
 #[derive(Default)]
 pub struct Follow{
-    map: HashMap<Variable, HashSet<Terminal>>
+    map: MapSet<Variable, Terminal>
 }
 
 impl Follow {
-    fn add(&mut self, variable: Variable, terminal: Terminal) {
-        self.map.entry(variable).or_default().insert(terminal);
+    pub fn new(first_set: &First, rules: &[Rule]) -> Self{
+        let mut track: MapSet<Variable, Variable>= MapSet::default();
+        let mut map: MapSet<Variable, Terminal> = MapSet::default();
+        for rule in rules{
+            let clause = rule.clause;
+            for (id, variable) in rule.output.data.iter().enumerate().filter_map(|(id, char)| Some((id, char.try_variable()?))) {
+                let Some(next) = rule.output.data.get(id + 1) else {
+                    
+                    // A-> pB is a production
+                    if variable != clause {
+                        track.add(variable, clause);
+                    }
+                    break;
+                };
+                // A-> pBq is a production
+                match next {
+                    crate::syntax::MixedChar::Terminal(next_ter) => map.add(variable, *next_ter),
+                    crate::syntax::MixedChar::Variable(next_var) => map.append(variable, first_set.map.get(next_var).clone()),
+                }
+            }
+        }
+        println!("track: {:?}", track);
+
+        for variable in track.keys() {
+            track_adding(variable, &track,&mut HashSet::new(), &mut map)
+        }
+
+        Self{map}
     }
-
-    pub fn new(first_set: &First, rules: &[Rule]) {
-
+    pub fn get(&self, key: &Variable) -> &HashSet<Terminal> {
+        self.map.get(key)
+    }
+    pub fn print(&self) {
+        println!("Follow set");
+        for (var, terminals) in self.map.iter() {
+            println!("{} {:?}", var, terminals);
+        }
     }
 }
