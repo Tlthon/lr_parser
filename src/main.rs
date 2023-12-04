@@ -18,49 +18,13 @@ fn main() {
         rule.add_terminal(syntax::END_TERMINAL);
         itemset.add_rule(rule);
     }
-    {
-        let mut rule = Rule::new('A');
-        rule.add_variable('A');
-        rule.add_terminal('*');
-        rule.add_variable('A');
-        itemset.add_rule(rule);
-    }
-    {
-        let mut rule = Rule::new('E');
-        rule.add_variable('E');
-        rule.add_terminal('+');
-        rule.add_variable('E');
-        itemset.add_rule(rule);
-    }
-    {
-        let mut rule = Rule::new('E');
-        rule.add_variable('A');
-        itemset.add_rule(rule);
-    }
-    {
-        let mut rule: Rule = Rule::new('A');
-        rule.add_terminal('1');
-        itemset.add_rule(rule);
-    }
-    {
-        let mut rule: Rule = Rule::new('E');
-        rule.add_terminal('2');
-        itemset.add_rule(rule);
-    }
-
-    {
-        let mut rule = Rule::new('A');
-        rule.add_terminal('0');
-        itemset.add_rule(rule);
-    }
-    {
-        let mut rule = Rule::new('A');
-        rule.add_terminal('(');
-        rule.add_variable('E');
-        rule.add_terminal(')');
-        itemset.add_rule(rule);
-    }
-
+    itemset.add_from_string("A:A*A");
+    itemset.add_from_string("E:E+E");
+    itemset.add_from_string("E:A");
+    itemset.add_from_string("A:(E)");
+    itemset.add_from_string("A:1");
+    itemset.add_from_string("A:0");
+    
     itemset.generate_next();
 
     println!("{}",itemset);

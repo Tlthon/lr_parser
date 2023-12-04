@@ -99,6 +99,11 @@ impl ItemSets {
         self.rules.push(rule);
     }
 
+    pub fn add_from_string(&mut self, string_rule: &str) -> Option<()>{
+        self.rules.push(string_rule.try_into().ok()?);
+        Some(())
+    }
+
     pub fn generate_next(&mut self){
         let mut itemmaps = HashMap::new();
         let rulegraph = RuleGraph::new(self.rules.clone());
@@ -106,7 +111,7 @@ impl ItemSets {
         let mut index = 0;
 
         first_item.add_rule(&self.rules[0], 0, 0);
-        let first = firstfollow::First::from_rule(&self.rules, &rulegraph);
+        let first = firstfollow::First::from_rule(&self.rules);
         first.print();
         let follow = firstfollow::Follow::new(&first, &self.rules);
         follow.print();

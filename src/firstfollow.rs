@@ -1,6 +1,6 @@
-use std::collections::{HashMap, HashSet};
+use std::collections::HashSet;
 
-use crate::{syntax::{Variable, Terminal, Rule}, ruledepend::RuleGraph, mapset::MapSet};
+use crate::{syntax::{Variable, Terminal, Rule}, mapset::MapSet};
 
 fn track_adding(current_val: &Variable, track: &MapSet<Variable, Variable>, visited: &mut HashSet<Variable>, map: &mut MapSet<Variable, Terminal>) {
     if visited.contains(current_val) {
@@ -20,29 +20,21 @@ pub struct First{
     map: MapSet<Variable, Terminal>
 }
 impl First {
-    pub fn from_rule(rule:&[Rule], rule_graph: &RuleGraph) -> Self {
-        let mut first_set = Self::default();
-        let rule_tuple = rule.iter()
-            .filter_map(|rule| {
-                Some((rule.clause, rule.output.data.first()?.try_terminal()?))
-            });
-        for (variable, terminal) in rule_tuple {
-            first_set.map.add(variable, terminal);
-        }
-
-        for mut varset in rule_graph.toposort(){
-            let Some(firstvar) = varset.pop_first() else {
-                continue;
-            };
-            for depend_var in rule_graph.get(firstvar) {
-                first_set.map.join(firstvar, depend_var)
-            }
-            let true_terminal = first_set.map.get(&firstvar).clone();
-            for var in varset {
-                first_set.map.set(var, true_terminal.clone());
+    pub fn from_rule(rule:&[Rule]) -> Self {
+        let mut map: MapSet<Variable, Terminal> = MapSet::default();
+        let mut track:MapSet<Variable, Variable> = MapSet::default();
+        for (variable, first) in rule.iter().map(|rule| (rule.clause, rule.output.data.first())) {
+            use crate::syntax::MixedChar::{Terminal, Variable};
+            match first {
+                Some(Terminal(next_ter)) => map.add(variable, *next_ter),
+                Some(Variable(next_var)) => track.add(variable, *next_var),
+                None => (),
             }
         }
-        first_set
+        for variable in track.keys() {
+            track_adding(variable, &track,&mut HashSet::new(), &mut map)
+        }
+        Self { map }
     }
 
     pub fn print(&self) {
@@ -75,14 +67,13 @@ impl Follow {
                     break;
                 };
                 // A-> pBq is a production
+                use crate::syntax::MixedChar::{Terminal, Variable};
                 match next {
-                    crate::syntax::MixedChar::Terminal(next_ter) => map.add(variable, *next_ter),
-                    crate::syntax::MixedChar::Variable(next_var) => map.append(variable, first_set.map.get(next_var).clone()),
+                    Terminal(next_ter) => map.add(variable, next_ter.to_owned()),
+                    Variable(next_var) => map.append(variable, first_set.map.get(next_var).to_owned()),
                 }
             }
         }
-        println!("track: {:?}", track);
-
         for variable in track.keys() {
             track_adding(variable, &track,&mut HashSet::new(), &mut map)
         }
