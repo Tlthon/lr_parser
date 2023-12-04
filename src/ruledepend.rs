@@ -1,84 +1,14 @@
-use std::{collections::{BTreeSet, HashMap}, cmp::min, usize};
+use std::{collections::{BTreeSet, HashMap}, usize};
 
-use crate::syntax::{Rule, Variable};
+use once_cell::sync::Lazy;
+
+use crate::{syntax::{Rule, Variable}, tarjan::Tarjan};
 
 type Set<T> = BTreeSet<T>;
 type Map<K,V> = HashMap<K,V>;
 
 fn is_connect(edges: & [Rule], nodes: & [Variable], u: usize, v:usize) -> bool {
     edges.iter().filter(|e| {e.clause == nodes[u] && e.output.data[0] == nodes[v].into()}).peekable().peek().is_some()
-}
-
-/// Tarjan's Algorithm
-/// https://doi.org/10.1137/0201010
-struct Tarjan <'tarjan>{
-    edges: &'tarjan [Rule],
-    nodes: &'tarjan [Variable],
-    index: usize,
-    stack: Vec<usize>,
-    len:usize,
-    indexs:Vec<Option<usize>>,
-    lowlinks:Vec<usize>,
-    on_stacks:Vec<bool>,
-}
-impl <'tarjan> Tarjan <'tarjan> {
-    fn new(edges: &'tarjan [Rule], nodes: &'tarjan [Variable]) -> Self {
-        let len = nodes.len();
-        Self { 
-            edges,
-            nodes,
-            index: 0, 
-            stack: vec![], 
-            len, 
-            indexs: vec![None; len], 
-            lowlinks: vec![0; len], 
-            on_stacks:  vec![false; len]
-        }
-    }
-    
-    fn get_connect<'a>(edges: &'tarjan [Rule], nodes: &'a [Variable], len:usize, u: usize) -> impl Iterator<Item = usize> +'a 
-    where 'tarjan: 'a{
-        (0..len).into_iter().filter(move |v| is_connect(edges, nodes, u, *v))
-    }
-    fn run(&mut self) -> Vec<Set<usize>> {
-        let mut scc:Vec<Set<usize>> = Vec::new();
-        for u in 0..self.len {
-            if self.indexs[u] == None {
-                scc.append(&mut self.strongconnect(u));
-            }
-        }
-        scc
-    }
-    fn strongconnect(&mut self, u: usize) -> Vec<Set<usize>> {
-        let mut output = vec![];
-        self.indexs[u] = Some(self.index);
-        self.lowlinks[u] = self.index;
-        self.index = self.index + 1;
-        self.stack.push(u);
-        self.on_stacks[u] = true;
-        for v in Self::get_connect(self.edges, &self.nodes, self.len, u) {
-            let Some(v_index) = self.indexs[v] else {
-                output.append(&mut self.strongconnect(v));
-                self.lowlinks[u] = min(self.lowlinks[u], self.lowlinks[v]);
-                continue;
-            };
-            if self.on_stacks[v] {
-                self.lowlinks[u] = min(self.lowlinks[u], v_index);
-            }
-        }
-        if Some(self.lowlinks[u]) == self.indexs[u] {
-            let mut scc: Set<usize> = Set::new();
-            while let Some(v) = self.stack.pop() {
-                self.on_stacks[v] = false;
-                scc.insert(v);
-                if v == u {
-                    break;
-                }
-            }
-            output.push(scc);
-        }
-        return output;
-    }   
 }
 
 fn check_edge(group1_id: &Set<usize>, group2_id: &Set<usize>, rules: &[Rule], variables: &[Variable]) -> bool{
@@ -105,6 +35,7 @@ fn check_edges(node_group : &[Set<usize>], rules: &[Rule], variables: &[Variable
     }
     edge
 }
+static EMPTY_USIZE:Lazy<Set<usize>> = Lazy::new(|| Set::default());
 
 pub struct RuleGraph{
     node_group: Vec<Set<usize>>,
@@ -117,7 +48,7 @@ impl RuleGraph {
     pub fn new(rules: Vec<Rule>) -> Self {
         let variables:Set<Variable> = rules.iter().map(|rule| rule.clause).collect();
         let variables:Vec<Variable> = variables.iter().map(|x| *x).collect();
-        let node_group = Tarjan::new(&rules, &variables).run();
+        let node_group = Tarjan::new(&rules, &variables, is_connect).run();
         println!("{:?} {:?}", variables, node_group);
 
         let indexing = node_group.iter().enumerate().fold(Map::new(), |mut map: Map<Variable, usize>, (id, variable_set)|{
@@ -139,12 +70,32 @@ impl RuleGraph {
             for v_id in &self.node_group[node] {
                 output.push(self.variables[*v_id]);
             }
-            let nexts = self.edge.get(&node).unwrap();
+            let nexts = self.edge.get(&node).unwrap_or(&EMPTY_USIZE);
             for next in nexts {
                 nodes.push(*next);
             }
         }
         output
+    }
+
+    fn topo_recur(&self, visit: &mut Set<usize>,output: &mut Vec<Set<usize>>,  node_group_id: usize){
+        if visit.contains(&node_group_id) {
+            return;
+        }
+        visit.insert(node_group_id);
+        for next_node in self.edge.get(&node_group_id).unwrap_or(&EMPTY_USIZE) {
+            self.topo_recur(visit, output, *next_node);
+        }
+        output.push(self.node_group[node_group_id].clone());
+    }
+
+    pub fn toposort(&self) -> Vec<Set<Variable>> {
+        let mut output = vec![];
+        let mut visit = Set::new();
+        for (node_group_id, _) in self.node_group.iter().enumerate() {
+            self.topo_recur(&mut visit, &mut output, node_group_id)
+        }
+        output.iter().map(|variableset| variableset.iter().map(|var_id| self.variables[*var_id]).collect()).collect()
     }
 
     pub fn gets_var(&self, variable: impl Iterator<Item = Variable>) -> Vec<Variable> {

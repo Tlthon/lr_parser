@@ -73,6 +73,13 @@ impl MixedChar {
             MixedChar::Variable(v) => Some(v),
         }
     }
+    pub fn try_terminal(self) -> Option<Terminal> {
+        match self {
+            MixedChar::Terminal(t) => Some(t),
+            MixedChar::Variable(_) => None,
+        }
+    }
+
 }
 impl From<Variable> for MixedChar {
     fn from(value: Variable) -> Self {
@@ -275,6 +282,6 @@ impl Display for Rule {
     }
 }
 
-pub struct Rules{
-    pub rules: Vec<Rule>
-}
+// pub struct Rules{
+//     pub rules: Vec<Rule>
+// }

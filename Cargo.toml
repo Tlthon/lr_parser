@@ -8,3 +8,4 @@ edition = "2021"
 [dependencies]
 getch-rs="*"
 prettytable="*"
+once_cell="*"

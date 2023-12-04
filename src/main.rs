@@ -6,7 +6,8 @@ pub mod syntax;
 mod parsingtable;
 mod parsing;
 pub mod ruledepend;
-
+pub mod firstfollow;
+mod tarjan;
 fn main() {
 
     let mut itemset = ItemSets::new();
@@ -17,10 +18,10 @@ fn main() {
         itemset.add_rule(rule);
     }
     {
-        let mut rule = Rule::new('M');
-        rule.add_variable('M');
+        let mut rule = Rule::new('A');
+        rule.add_variable('A');
         rule.add_terminal('*');
-        rule.add_variable('M');
+        rule.add_variable('A');
         itemset.add_rule(rule);
     }
     {
@@ -32,33 +33,32 @@ fn main() {
     }
     {
         let mut rule = Rule::new('E');
-        rule.add_variable('M');
+        rule.add_variable('A');
         itemset.add_rule(rule);
     }
     {
-        let mut rule: Rule = Rule::new('M');
+        let mut rule: Rule = Rule::new('A');
         rule.add_terminal('1');
         itemset.add_rule(rule);
     }
     {
-        let mut rule = Rule::new('M');
+        let mut rule: Rule = Rule::new('E');
+        rule.add_terminal('2');
+        itemset.add_rule(rule);
+    }
+
+    {
+        let mut rule = Rule::new('A');
         rule.add_terminal('0');
         itemset.add_rule(rule);
     }
     {
-        let mut rule = Rule::new('M');
+        let mut rule = Rule::new('A');
         rule.add_terminal('(');
         rule.add_variable('E');
         rule.add_terminal(')');
         itemset.add_rule(rule);
     }
-    // {
-    //     let mut rule = Rule::new('E');
-    //     rule.add_terminal('(');
-    //     rule.add_variable('E');
-    //     rule.add_terminal(')');
-    //     itemset.add_rule(rule);
-    // }
 
     itemset.generate_next();
 

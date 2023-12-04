@@ -1,7 +1,7 @@
 use std::{collections::{BTreeSet, HashMap}, fmt::Display};
 pub const DOT: char = '•';
 
-use crate::{syntax::{Rule, MixedChar, Variable}, ruledepend::RuleGraph};
+use crate::{syntax::{Rule, MixedChar, Variable}, ruledepend::RuleGraph, firstfollow};
 
 #[derive(Hash, PartialEq, Eq, Clone, Debug)]
 pub struct Item{
@@ -106,6 +106,8 @@ impl ItemSets {
         let mut index = 0;
 
         first_item.add_rule(&self.rules[0], 0, 0);
+        firstfollow::First::from_rule(&self.rules, &rulegraph).print();
+        println!("{:?}", rulegraph.toposort());
         let kernellist: Vec<usize> = rulegraph.gets_rule(first_item.symbols.iter().filter_map(|symbol| symbol.try_variable()));
         for kernel in kernellist {
             first_item.add_rule(&self.rules[kernel], 0, kernel)
