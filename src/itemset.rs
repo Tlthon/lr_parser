@@ -6,16 +6,17 @@ use crate::{syntax::{Rule, MixedChar}, ruledepend::RuleGraph, firstfollow};
 #[derive(Hash, PartialEq, Eq, Clone, Debug)]
 pub struct Item{
     rule_number: usize,
+    kernel: bool,
     dot: usize
 }
 
 impl Item {
     pub fn new(rule_number: usize, dot:usize) -> Self {
-        Self { rule_number, dot}
+        Self { rule_number, dot, kernel: false}
     }
 
     pub fn shift(&self) -> Self {
-        Self { rule_number: self.rule_number, dot: self.dot + 1 }
+        Self { rule_number: self.rule_number, dot: self.dot + 1, kernel: true }
     }
     pub fn symbol(&self, rules: &[Rule]) -> Option<MixedChar> {
         rules[self.rule_number].output.data.get(self.dot).copied()
@@ -118,7 +119,8 @@ impl ItemSets {
         println!("{:?}", rulegraph.toposort());
         let kernellist: Vec<usize> = rulegraph.gets_rule(first_item.symbols.iter().filter_map(|symbol| symbol.try_variable()));
         for kernel in kernellist {
-            first_item.add_rule(&self.rules[kernel], 0, kernel)
+            first_item.add_rule(&self.rules[kernel], 0, kernel);
+            first_item.items[0].kernel = true;
         }
         self.itemsets.push(first_item);
         loop {
@@ -156,6 +158,9 @@ impl Display for ItemSets {
         for (number, item_set) in self.itemsets.iter().enumerate() {
             write!(f, "Item set {}\n",number)?;
             for item in &item_set.items {
+                if ! item.kernel{
+                    continue;
+                }
                 write!(f, "{} -> ", self.rules[item.rule_number].clause)?;
                 if 0 == item.dot {
                     write!(f, "{} ",DOT)?;

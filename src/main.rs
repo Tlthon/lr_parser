@@ -18,13 +18,17 @@ fn main() {
         rule.add_terminal(syntax::END_TERMINAL);
         itemset.add_rule(rule);
     }
-    itemset.add_from_string("A:A*A");
-    itemset.add_from_string("E:E+E");
-    itemset.add_from_string("E:A");
-    itemset.add_from_string("A:(E)");
-    itemset.add_from_string("A:1");
-    itemset.add_from_string("A:0");
-    
+    // itemset.add_from_string("A:A*A");
+    // itemset.add_from_string("E:E+E");
+    // itemset.add_from_string("E:A");
+    // itemset.add_from_string("A:(E)");
+    // itemset.add_from_string("A:1");
+    // itemset.add_from_string("A:0");
+    itemset.add_from_string("E:T");
+    itemset.add_from_string("E:(E)");
+    itemset.add_from_string("T:n");
+    itemset.add_from_string("T:+T");
+    itemset.add_from_string("T:T+n");
     itemset.generate_next();
 
     println!("{}",itemset);
