@@ -33,6 +33,60 @@ pub struct StateMachine{
     pub states: Vec<State>,
 }
 
+mod display {
+    use std::fmt::Display;
+    use crate::{itemset::ItemSets, syntax};
+    use super::{State, StateMachine};
+
+    pub struct StateMachineDisplay<'a> {
+        states: &'a [State],
+        itemsets: &'a ItemSets,
+    }
+
+    impl<'a> StateMachineDisplay<'a> {
+        pub(super) fn new(machine: &'a StateMachine, itemsets: &'a ItemSets) -> Self {
+            Self { states: &machine.states, itemsets }
+        }
+    }
+
+    impl<'a> Display for StateMachineDisplay<'a> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {    
+            for (index, state) in self.states.iter().enumerate(){
+
+
+                write!(f, "state {}\n", index)?;
+                for item in &self.itemsets.itemsets[index].items {
+                    if !item.kernel() {
+                        continue;
+                    }
+                    write!(f, "    {}\n", item.display(&self.itemsets.rules))?;
+                }
+
+                if let Some(rule) = &state.reduce {
+                    let reduced_var = rule.clause;
+                    if reduced_var.symbol == syntax::END_VARIABLE{
+                        write!(f, "    accept\n")?;
+                        continue;
+                    }
+                    write!(f, "    reduce: (rule {})\n", rule)?;
+                }
+                if !state.next.is_empty() {
+                    for(requirement, stateid) in state.next.iter() {
+                        use crate::syntax::MixedChar::{Terminal, Variable};
+                        match requirement {
+                            Terminal(t) => write!(f, "    {: <10} shift {}\n", t ,stateid),
+                            Variable(v) => write!(f, "    {: <10} goto {}\n", v ,stateid),
+
+                        }?;
+                    }
+                }
+            }
+            Ok(())
+    
+        }
+    }
+}
+
 impl Display for StateMachine {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for (index, state) in self.states.iter().enumerate(){
@@ -60,6 +114,10 @@ impl Display for StateMachine {
 }
 
 impl StateMachine {    
+    pub fn display<'a>(&'a self, itemset: &'a ItemSets) -> display::StateMachineDisplay<'a> {
+        display::StateMachineDisplay::new(&self, &itemset)
+    }
+
     pub fn reduce_state(&self, index: usize, variable: Variable) -> usize {
         *(&self.states[index].check_variable(&variable).unwrap_or(0))
     } 
@@ -81,7 +139,7 @@ impl StateMachine {
         }
         return Action::Reject;
     }
-    pub fn from_itemset(sets: ItemSets) -> Self {
+    pub fn from_itemset(sets: &ItemSets) -> Self {
         let mut machine = Self{
             states: vec![State::new(); sets.itemsets.len()]
         };

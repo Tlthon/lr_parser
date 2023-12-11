@@ -25,11 +25,22 @@ impl Item {
     fn is_end(&self, rules: &[Rule]) -> bool {
         rules[self.rule_number].output.data.len() == self.dot
     }
+
+    pub fn display<'a> (&'a self, rules: &'a [Rule]) -> display::ItemDisplay<'a> {
+        display::ItemDisplay{
+            item: self,
+            rules: rules
+        }
+    }
+
+    pub fn kernel(&self) -> bool {
+        self.kernel
+    }
 }
 
 #[derive(Hash,Eq,PartialEq,Clone, Debug)]
 pub struct ItemSet{
-    items: Vec<Item>,
+    pub items: Vec<Item>,
     symbols: BTreeSet<MixedChar>,
 }
 
@@ -86,6 +97,39 @@ impl ItemSet {
         })
     } 
 }
+
+mod display {
+    use std::fmt::Display;
+
+    use crate::syntax::Rule;
+
+    use super::{Item, DOT};
+
+    pub struct ItemDisplay<'a> {
+        pub(super) item: &'a Item,
+        pub(super) rules: &'a [Rule]
+    }
+
+    impl Display for ItemDisplay<'_> {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            if ! self.item.kernel{
+                write!(f, "+ ")?;
+            }
+            write!(f, "{} -> ", self.rules[self.item.rule_number].clause)?;
+            if 0 == self.item.dot {
+                write!(f, "{} ",DOT)?;
+            }
+            for (i, character) in self.rules[self.item.rule_number].output.data.iter().enumerate() {
+                write!(f, "{} ",character)?;
+                if i + 1 == self.item.dot {
+                    write!(f, "{} ",DOT)?;
+                }    
+            }
+            Ok(())
+        }
+    }
+}
+
 pub struct ItemSets {
     pub itemsets: Vec<ItemSet>,
     pub rules: Vec<Rule>,
@@ -128,7 +172,6 @@ impl ItemSets {
                 break;
             };
             let symbols = & mut cur_item.symbols.clone();
-
             let mut next_val = Vec::new();
             for transchar in symbols.iter(){
                 let new_itemset: Option<ItemSet> = cur_item.transitions(*transchar, &self.rules);
@@ -149,7 +192,6 @@ impl ItemSets {
             self.ordering_map.push(next_val);
             index += 1;
         }
-
     }
 }
 
@@ -158,20 +200,7 @@ impl Display for ItemSets {
         for (number, item_set) in self.itemsets.iter().enumerate() {
             write!(f, "Item set {}\n",number)?;
             for item in &item_set.items {
-                if ! item.kernel{
-                    continue;
-                }
-                write!(f, "{} -> ", self.rules[item.rule_number].clause)?;
-                if 0 == item.dot {
-                    write!(f, "{} ",DOT)?;
-                }
-                for (i, character) in self.rules[item.rule_number].output.data.iter().enumerate() {
-                    write!(f, "{} ",character)?;
-                    if i + 1 == item.dot {
-                        write!(f, "{} ",DOT)?;
-                    }    
-                }
-                write!(f, "\n")?;
+                write!(f, "{}\n", item.display(&self.rules))?;
             }
         }
         Ok(())

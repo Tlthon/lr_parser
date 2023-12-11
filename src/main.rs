@@ -1,9 +1,9 @@
 use prettytable::{Table, Row, Cell};
 
-use crate::{parsingtable::StateMachine, syntax::Rule, parsing::ParsingProcess, itemset::ItemSets};
+use crate::{parsing_table::StateMachine, syntax::Rule, parsing::ParsingProcess, itemset::ItemSets};
 pub mod itemset;
 pub mod syntax;
-mod parsingtable;
+mod parsing_table;
 mod parsing;
 pub mod ruledepend;
 pub mod firstfollow;
@@ -31,9 +31,11 @@ fn main() {
     itemset.add_from_string("T:T+n");
     itemset.generate_next();
 
-    println!("{}",itemset);
+    // println!("{}",itemset);
 
-    let machine = StateMachine::from_itemset(itemset);
+    let machine = StateMachine::from_itemset(&itemset);
+
+    println!("{}", machine.display(&itemset));
     print!("\nTaking input\n");
     let mut line = std::io::stdin().lines().next().unwrap().unwrap();
     line.push(syntax::END_TERMINAL);
