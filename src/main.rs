@@ -5,10 +5,10 @@ pub mod itemset;
 pub mod syntax;
 mod parsing_table;
 mod parsing;
-pub mod ruledepend;
-pub mod firstfollow;
+pub mod rule_depend;
+pub mod first_follow;
 mod tarjan;
-mod mapset;
+mod map_set;
 fn main() {
 
     let mut itemset = ItemSets::new();

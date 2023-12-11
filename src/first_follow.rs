@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use crate::{syntax::{Variable, Terminal, Rule}, mapset::MapSet};
+use crate::{syntax::{Variable, Terminal, Rule}, map_set::MapSet};
 
 fn track_adding(current_val: &Variable, track: &MapSet<Variable, Variable>, visited: &mut HashSet<Variable>, map: &mut MapSet<Variable, Terminal>) {
     if visited.contains(current_val) {
