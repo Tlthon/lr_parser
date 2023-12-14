@@ -8,7 +8,11 @@ type Set<T> = BTreeSet<T>;
 type Map<K,V> = HashMap<K,V>;
 
 fn is_connect(edges: & [Rule], nodes: & [Variable], u: usize, v:usize) -> bool {
-    edges.iter().filter(|e| {e.clause == nodes[u] && e.output.data[0] == nodes[v].into()}).peekable().peek().is_some()
+    edges.iter().filter(
+        |e| {
+            e.clause == nodes[u] && e.output.data.get(0) == Some(&nodes[v].into())
+        })
+        .peekable().peek().is_some()
 }
 
 fn check_edge(group1_id: &Set<usize>, group2_id: &Set<usize>, rules: &[Rule], variables: &[Variable]) -> bool{

@@ -1,22 +1,24 @@
 use std::{collections::{BTreeSet, HashMap}, fmt::Display};
+use crate::{syntax::{Rule, MixedChar}, rule_depend::RuleGraph, first_follow, syntax};
+use crate::syntax::Terminal;
 pub const DOT: char = '•';
-
-use crate::{syntax::{Rule, MixedChar}, rule_depend::RuleGraph, first_follow};
+mod display;
 
 #[derive(Hash, PartialEq, Eq, Clone, Debug)]
 pub struct Item{
     rule_number: usize,
     kernel: bool,
-    dot: usize
+    dot: usize,
+    follow: Terminal
 }
 
 impl Item {
-    pub fn new(rule_number: usize, dot:usize) -> Self {
-        Self { rule_number, dot, kernel: false}
+    pub fn new(rule_number: usize, dot:usize, follow: Terminal) -> Self {
+        Self { rule_number, dot, kernel: false, follow}
     }
 
     pub fn shift(&self) -> Self {
-        Self { rule_number: self.rule_number, dot: self.dot + 1, kernel: true }
+        Self { rule_number: self.rule_number, dot: self.dot + 1, kernel: true , follow: self.follow}
     }
     pub fn symbol(&self, rules: &[Rule]) -> Option<MixedChar> {
         rules[self.rule_number].output.data.get(self.dot).copied()
@@ -29,7 +31,7 @@ impl Item {
     pub fn display<'a> (&'a self, rules: &'a [Rule]) -> display::ItemDisplay<'a> {
         display::ItemDisplay{
             item: self,
-            rules: rules
+            rules
         }
     }
 
@@ -48,8 +50,13 @@ impl ItemSet {
     fn new() -> Self {
         Self { items: vec![], symbols: BTreeSet::default()}
     }
-    fn add_rule(&mut self, rule:&Rule, dot:usize, rule_number:usize) {
-        self.items.push(Item::new(rule_number, dot));
+    fn add_rule<'a, Terminals>(&mut self, rule:&Rule, dot:usize, rule_number:usize, follows: Terminals)
+    where Terminals: IntoIterator<Item = &'a Terminal>
+    {
+
+        for follow in follows {
+            self.items.push(Item::new(rule_number, dot, *follow));
+        }
 
         if let Some(character) = rule.output.data.get(dot){
             self.symbols.insert(*character);
@@ -88,57 +95,24 @@ impl ItemSet {
         return None;
     }
 
-    pub fn reduce<'a>(&'a self, rules:&'a [Rule]) -> impl Iterator<Item = Rule> + 'a {
+    pub fn reduce<'a>(&'a self, rules:&'a [Rule]) -> impl Iterator<Item = (Rule, Terminal)> + 'a {
         self.items.iter().filter_map(|item| {
             match item.is_end(rules) {
-                true => Some(rules[item.rule_number].clone()),
+                true => Some((rules[item.rule_number].clone(), item.follow)),
                 false => None,
             }
         })
-    } 
-}
-
-mod display {
-    use std::fmt::Display;
-
-    use crate::syntax::Rule;
-
-    use super::{Item, DOT};
-
-    pub struct ItemDisplay<'a> {
-        pub(super) item: &'a Item,
-        pub(super) rules: &'a [Rule]
-    }
-
-    impl Display for ItemDisplay<'_> {
-        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            if ! self.item.kernel{
-                write!(f, "+ ")?;
-            }
-            write!(f, "{} -> ", self.rules[self.item.rule_number].clause)?;
-            if 0 == self.item.dot {
-                write!(f, "{} ",DOT)?;
-            }
-            for (i, character) in self.rules[self.item.rule_number].output.data.iter().enumerate() {
-                write!(f, "{} ",character)?;
-                if i + 1 == self.item.dot {
-                    write!(f, "{} ",DOT)?;
-                }    
-            }
-            Ok(())
-        }
     }
 }
-
 pub struct ItemSets {
-    pub itemsets: Vec<ItemSet>,
+    pub sets: Vec<ItemSet>,
     pub rules: Vec<Rule>,
     pub ordering_map: Vec<Vec<(MixedChar, usize)>>,
 }
 
 impl ItemSets {
     pub fn new() -> Self {
-        Self { rules: Vec::default(), itemsets: Vec::default(), ordering_map: Vec::default() }
+        Self { rules: Vec::default(), sets: Vec::default(), ordering_map: Vec::default() }
     }
     pub fn add_rule(&mut self, rule: Rule) {
         self.rules.push(rule);
@@ -151,42 +125,44 @@ impl ItemSets {
 
     pub fn generate_next(&mut self){
         let mut itemmaps = HashMap::new();
-        let rulegraph = RuleGraph::new(self.rules.clone());
+        let rule_graph = RuleGraph::new(self.rules.clone());
         let mut first_item = ItemSet::new();
         let mut index = 0;
 
-        first_item.add_rule(&self.rules[0], 0, 0);
+        first_item.add_rule(&self.rules[0], 0, 0, &[syntax::Terminal::end()]);
         let first = first_follow::First::from_rule(&self.rules);
-        first.print();
-        let follow = first_follow::Follow::new(&first, &self.rules);
-        follow.print();
-        println!("{:?}", rulegraph.toposort());
-        let kernellist: Vec<usize> = rulegraph.gets_rule(first_item.symbols.iter().filter_map(|symbol| symbol.try_variable()));
-        for kernel in kernellist {
-            first_item.add_rule(&self.rules[kernel], 0, kernel);
+        // first.print();
+        let follows = first_follow::Follow::new(&first, &self.rules);
+        // follows.print();
+        // println!("{:?}", rule_graph.toposort());
+        let kernels: Vec<usize> = rule_graph.gets_rule(first_item.symbols.iter().filter_map(|symbol| symbol.try_into().ok()));
+
+        for kernel in kernels {
+            let output = &self.rules[kernel].clause;
+            first_item.add_rule(&self.rules[kernel], 0, kernel, follows.get(output));
             first_item.items[0].kernel = true;
         }
-        self.itemsets.push(first_item);
+        self.sets.push(first_item);
         loop {
-            let Some(cur_item) = self.itemsets.get(index).cloned() else {
+            let Some(cur_item) = self.sets.get(index).cloned() else {
                 break;
             };
             let symbols = & mut cur_item.symbols.clone();
             let mut next_val = Vec::new();
-            for transchar in symbols.iter(){
-                let new_itemset: Option<ItemSet> = cur_item.transitions(*transchar, &self.rules);
+            for transition_char in symbols.iter(){
+                let new_itemset: Option<ItemSet> = cur_item.transitions(*transition_char, &self.rules);
                 if let Some(mut new_itemset) = new_itemset {
-                    let kernellist: Vec<usize> = rulegraph.gets_rule(new_itemset.symbols.iter().filter_map(|symbol| symbol.try_variable()));
-                    for kernel in kernellist {
-                        new_itemset.add_rule(&self.rules[kernel], 0, kernel)
+                    let kernels: Vec<usize> = rule_graph.gets_rule(new_itemset.symbols.iter().filter_map(|symbol| symbol.try_into().ok()));
+                    for kernel in  kernels{
+                        new_itemset.add_rule(&self.rules[kernel], 0, kernel, follows.get(&self.rules[kernel].clause))
                     }
                     if let Some(new_index) = itemmaps.get(&new_itemset) {
-                        next_val.push((transchar.clone(), *new_index));
+                        next_val.push((transition_char.clone(), *new_index));
                         continue;
                     } 
-                    itemmaps.insert(new_itemset.clone(), self.itemsets.len());
-                    next_val.push((transchar.clone(), self.itemsets.len()));
-                    self.itemsets.push(new_itemset);
+                    itemmaps.insert(new_itemset.clone(), self.sets.len());
+                    next_val.push((transition_char.clone(), self.sets.len()));
+                    self.sets.push(new_itemset);
                 }
             }
             self.ordering_map.push(next_val);
@@ -197,7 +173,7 @@ impl ItemSets {
 
 impl Display for ItemSets {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (number, item_set) in self.itemsets.iter().enumerate() {
+        for (number, item_set) in self.sets.iter().enumerate() {
             write!(f, "Item set {}\n",number)?;
             for item in &item_set.items {
                 write!(f, "{}\n", item.display(&self.rules))?;
