@@ -25,21 +25,25 @@ impl<'a> Display for StateMachineDisplay<'a> {
                 }
                 write!(f, "    {}\n", item.display(&self.sets.rules))?;
             }
+            write!(f,"\n")?;
 
             for (follow, rule) in &state.reduce {
                 let reduced_var = rule.clause;
                 if reduced_var.symbol == syntax::END_VARIABLE{
-                    write!(f, "    {:5} accept\n", follow)?;
+                    write!(f, "    {:3} accept\n", follow)?;
                     continue;
                 }
-                write!(f, "    {:5} reduce {}\n", follow ,rule)?;
+                write!(f, "    {:3} reduce {}\n", follow ,rule)?;
             }
+            if state.reduce.len() != 0 && state.next.len() != 0 {
+                write!(f,"\n")?;
+            }
+
             for(requirement, next_id) in state.next.iter() {
                 use crate::syntax::MixedChar::{Terminal, Variable};
                 match requirement {
-                    Terminal(t) => write!(f, "    {:5} shift {}\n", t ,next_id),
-                    Variable(v) => write!(f, "    {:5} goto {}\n", v ,next_id),
-
+                    Terminal(t) => write!(f, "    {:3} shift {}\n", t ,next_id),
+                    Variable(v) => write!(f, "    {:3} goto {}\n", v ,next_id),
                 }?;
             }
         }

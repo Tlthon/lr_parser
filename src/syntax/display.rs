@@ -12,35 +12,33 @@ impl Display for Terminal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.symbol == END_TERMINAL {
             // return write!(f, "EOF");
-            return f.pad(&format!("{:.1}", "EOF"))
+            return f.pad(&format!("{:.3}", "EOF"))
         }
         return f.pad(&format!("{:.1}", self.symbol))
     }
 }
 impl Debug for Terminal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(&self, f)
+        Display::fmt(self, f)
     }
 }
 impl Display for Variable {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.symbol == END_VARIABLE {
-            return write_pad!(f, "{:.1}" ,"ACCEPT");
+            return write_pad!(f, "{:.6}" ,"ACCEPT");
 
         }
         write_pad!(f, "{:.1}", self.symbol)
     }
 }
 impl Debug for Variable {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        Display::fmt(self, f)
-    }
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result { Display::fmt(self, f) }
 }
 impl Display for MixedChar {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {
-            MixedChar::Terminal(t) => write!(f, "{}", t),
-            MixedChar::Variable(v) => write!(f, "{}", v),
+            MixedChar::Terminal(t) => write_pad!(f, "{:.6}", t),
+            MixedChar::Variable(v) => write_pad!(f, "{:.3}", v),
         }
     }
 }

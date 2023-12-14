@@ -53,7 +53,6 @@ impl RuleGraph {
         let variables:Set<Variable> = rules.iter().map(|rule| rule.clause).collect();
         let variables:Vec<Variable> = variables.iter().map(|x| *x).collect();
         let node_group = Tarjan::new(&rules, &variables, is_connect).run();
-        println!("{:?} {:?}", variables, node_group);
 
         let indexing = node_group.iter().enumerate().fold(Map::new(), |mut map: Map<Variable, usize>, (id, variable_set)|{
             variable_set.iter().for_each(|variable_id| {map.insert(variables[*variable_id],  id);});
