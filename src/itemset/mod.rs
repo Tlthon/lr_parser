@@ -1,10 +1,11 @@
-use std::{collections::{BTreeSet, HashMap}, fmt::Display};
+use std::collections::{BTreeSet, HashMap};
+use std::iter;
 use crate::{syntax::{Rule, MixedChar}, rule_depend::RuleGraph, first_follow, syntax};
 use crate::syntax::Terminal;
 pub const DOT: char = '•';
 mod display;
 
-#[derive(Hash, PartialEq, Eq, Clone, Debug)]
+#[derive(Hash, PartialEq, Eq, Clone, Debug, PartialOrd, Ord)]
 pub struct Item{
     rule_number: usize,
     kernel: bool,
@@ -13,8 +14,8 @@ pub struct Item{
 }
 
 impl Item {
-    pub fn new(rule_number: usize, dot:usize, follow: Terminal) -> Self {
-        Self { rule_number, dot, kernel: false, follow}
+    pub fn new(rule_number: usize, dot:usize, follow: Terminal, kernel: bool) -> Self {
+        Self { rule_number, dot, kernel, follow}
     }
 
     pub fn shift(&self) -> Self {
@@ -42,20 +43,30 @@ impl Item {
 
 #[derive(Hash,Eq,PartialEq,Clone, Debug)]
 pub struct ItemSet{
-    pub items: Vec<Item>,
+    pub items: BTreeSet<Item>,
     symbols: BTreeSet<MixedChar>,
 }
 
 impl ItemSet {
     fn new() -> Self {
-        Self { items: vec![], symbols: BTreeSet::default()}
+        Self { items: BTreeSet::default(), symbols: BTreeSet::default()}
     }
     fn add_rule<'a, Terminals>(&mut self, rule:&Rule, dot:usize, rule_number:usize, follows: Terminals)
     where Terminals: IntoIterator<Item = &'a Terminal>
     {
-
         for follow in follows {
-            self.items.push(Item::new(rule_number, dot, *follow));
+            self.items.insert(Item::new(rule_number, dot ,*follow, false));
+        }
+
+        if let Some(character) = rule.output.data.get(dot){
+            self.symbols.insert(*character);
+        }
+    }
+    fn add_kernel<'a, Terminals>(&mut self, rule:&Rule, dot:usize, rule_number:usize, follows: Terminals)
+        where Terminals: IntoIterator<Item = &'a Terminal>
+    {
+        for follow in follows {
+            self.items.insert(Item::new(rule_number, dot ,*follow, true));
         }
 
         if let Some(character) = rule.output.data.get(dot){
@@ -64,11 +75,12 @@ impl ItemSet {
     }
 
     fn add_item(&mut self, rules: &[Rule], item: Item) {
-        self.items.push(item);
-
-        if let Some(character) = self.items.last().and_then(|x| x.symbol(rules)){
+        if let Some(character) = item.symbol(rules){
             self.symbols.insert(character);
         }
+
+        self.items.insert(item);
+
     }
 
     fn transitions(&self, transchar: MixedChar, rules: &[Rule]) -> Option<ItemSet> {
@@ -136,16 +148,15 @@ impl ItemSets {
         let rule_graph = RuleGraph::new(self.rules.clone());
         let mut first_item = ItemSet::new();
         let mut index = 0;
-
-        first_item.add_rule(&self.rules[0], 0, 0, &[syntax::Terminal::epsilon()]);
+        first_item.add_kernel(&self.rules[0], 0, 0, &[syntax::Terminal::epsilon()]);
         let first = first_follow::First::from_rule(&self.rules);
         let follows = first_follow::Follow::new(&first, &self.rules);
-        let kernels: Vec<usize> = rule_graph.gets_rule(first_item.symbols.iter().filter_map(|symbol| symbol.try_into().ok()));
+        let closures: Vec<usize> = rule_graph.gets_rule(first_item.symbols.iter().filter_map(|symbol| symbol.try_into().ok()));
 
-        for kernel in kernels {
-            let output = &self.rules[kernel].clause;
-            first_item.add_rule(&self.rules[kernel], 0, kernel, follows.get(output));
-            first_item.items[0].kernel = true;
+        for closure in &closures {
+            let output = &self.rules[*closure].clause;
+            let follow_set = follows.get_filtered(output, iter::once(&index).chain(&closures));
+            first_item.add_rule(&self.rules[*closure], 0, *closure, &follow_set);
         }
         self.sets.push(first_item);
         loop {
@@ -157,9 +168,12 @@ impl ItemSets {
             for transition_char in symbols.iter(){
                 let new_itemset: Option<ItemSet> = cur_item.transitions(*transition_char, &self.rules);
                 if let Some(mut new_itemset) = new_itemset {
-                    let kernels: Vec<usize> = rule_graph.gets_rule(new_itemset.symbols.iter().filter_map(|symbol| symbol.try_into().ok()));
-                    for kernel in  kernels{
-                        new_itemset.add_rule(&self.rules[kernel], 0, kernel, follows.get(&self.rules[kernel].clause))
+                    let non_kernels: Vec<usize> = rule_graph.gets_rule(new_itemset.symbols.iter().filter_map(|symbol| symbol.try_into().ok()));
+                    for non_kernel in  non_kernels.iter(){
+                        let kernels = new_itemset.items.iter().map(|item| &item.rule_number);
+                        let output = &self.rules[*non_kernel].clause;
+                        let follow_set = follows.get_filtered(output, kernels.chain(&non_kernels));
+                        new_itemset.add_rule(&self.rules[*non_kernel], 0, *non_kernel, &follow_set)
                     }
                     if let Some(new_index) = itemmaps.get(&new_itemset) {
                         next_val.push((transition_char.clone(), *new_index));

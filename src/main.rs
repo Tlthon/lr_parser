@@ -1,15 +1,17 @@
-use getch_rs::Getch;
-use prettytable::{Table, Row, Cell};
+#![allow(dead_code)]
 
-use crate::{parsing_table::StateMachine, syntax::Rule, parsing::ParsingProcess, itemset::ItemSets};
+use prettytable::{Cell, Row, Table};
+
+use crate::{itemset::ItemSets, parsing::ParsingProcess, parsing_table::StateMachine, syntax::Rule};
 pub mod itemset;
 pub mod syntax;
 mod parsing_table;
 mod parsing;
 pub mod rule_depend;
-pub mod first_follow;
 mod tarjan;
-mod map_set;
+mod data_structure;
+pub mod first_follow;
+
 fn main() {
 
     let mut itemset = ItemSets::new();
@@ -19,17 +21,17 @@ fn main() {
         rule.add_terminal(syntax::END_TERMINAL);
         itemset.add_rule(rule);
     }
-    itemset.add_from_string("E:E+M");
-    itemset.add_from_string("E:M");
-    itemset.add_from_string("M:M*P");
-    itemset.add_from_string("M:P");
-    itemset.add_from_string("P:n");
-    itemset.add_from_string("P:(E)");
-    edit_rule(&mut itemset);
+    itemset.add_from_string("E:aAc");
+    itemset.add_from_string("E:aBd");
+    itemset.add_from_string("E:ba");
+    itemset.add_from_string("E:bBc");
+
+    itemset.add_from_string("A:z");
+    itemset.add_from_string("B:z");
+    itemset.generate_next();
 
     let machine = StateMachine::from_itemset(&itemset);
 
-    // println!("{:18}", itemset);
     println!("{:20}", machine.display(&itemset));
     print!("\nTaking input\n");
     let mut line = std::io::stdin().lines().next().unwrap().unwrap();
@@ -44,7 +46,7 @@ fn main() {
 }
 
 fn clear_screen() {
-    print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+    println!("{esc}[2J{esc}[1;1H", esc = 27 as char);
 }
 
 fn edit_rule(itemset: &mut ItemSets) {
@@ -52,38 +54,43 @@ fn edit_rule(itemset: &mut ItemSets) {
     loop {
         println!("Press s to save, a to add new rule, p to print the resulting itemset");
         let Ok(key_press) = getch_rs::Getch::new().getch() else {break};
-        match key_press {
-            getch_rs::Key::Char('s') => {
-                itemset.clear();
-                itemset.generate_next();
-                return;
-            },
-            getch_rs::Key::Char('p') => {
-                for rule in &itemset.rules {
-                    println!("{}", rule);
+        loop {
+            match key_press {
+                getch_rs::Key::Char('s') => {
+                    itemset.clear();
+                    itemset.generate_next();
+                    return;
+                },
+                getch_rs::Key::Char('p') => {
+                    for rule in &itemset.rules {
+                        println!("{}", rule);
+                    }
+                    break;
+                },
+                getch_rs::Key::Char('a') => {
+                    loop {
+                        println!("Please type in new rule (format is Clause->MixedString)");
+                        let Some(Ok(line)) = std::io::stdin().lines().next() else {
+                            clear_screen();
+                            continue
+                        };
+                        let success = itemset.add_from_string(&line);
+                        if success { break; }
+                        clear_screen();
+                    }
                 }
-            },
-            getch_rs::Key::Char('a')=> {
-                loop {
-                    println!("Please type in new rule (format is Clause->MixedString)");
-                    let Some(Ok(line)) = std::io::stdin().lines().next() else {clear_screen();continue };
-                    let success = itemset.add_from_string(&line);
-                    if success { break; }
+                _ => {
                     clear_screen();
                 }
             }
-            _ => {
-                clear_screen();
-            }
         }
-
-
     }
 }
 
 fn run_parsing(machine: &StateMachine, mut history: Vec<ParsingProcess>) {
     let g = getch_rs::Getch::new();
     loop {
+        clear_screen();
         let mut table = Table::new();
         table.add_row(Row::new(vec![
             Cell::new("Step"),
@@ -125,7 +132,7 @@ fn run_parsing(machine: &StateMachine, mut history: Vec<ParsingProcess>) {
 
             _ => continue
         }
-        clear_screen();
+
 
     }
 

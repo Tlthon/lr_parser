@@ -1,8 +1,5 @@
-use std::fmt::{Display, Formatter};
-use std::ptr::write;
-
+use std::fmt::Display;
 use crate::syntax::Rule;
-
 use super::{Item, DOT, ItemSets};
 
 pub struct ItemDisplay<'a> {
