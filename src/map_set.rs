@@ -1,4 +1,5 @@
 use std::{collections::{HashSet, HashMap}, hash::Hash, ops::Deref};
+use std::process::Output;
 
 #[derive(Debug)]
 pub struct MapSet<Key, Value>{
@@ -34,9 +35,7 @@ where Key: Hash + Eq
         };
         self.content.entry(output).or_default().extend(first);
     }
-
 }
-
 
 impl<Key, Value> Deref for MapSet<Key, Value> {
     type Target = HashMap<Key, HashSet<Value>>;

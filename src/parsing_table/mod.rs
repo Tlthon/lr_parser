@@ -45,18 +45,17 @@ impl StateMachine {
 
     pub fn next(&self, index: usize, rest: Option<Terminal>) -> Action {
         let cur_state = &self.states[index];
-        if let Some(current) = rest { 
-            if let Some(next) = cur_state.check_terminal(&current) {
-                return Action::Shift(next);
+        let current = rest.unwrap_or(Terminal::epsilon());
+        if let Some(next) = cur_state.check_terminal(&current) {
+            return Action::Shift(next);
+        }
+        if let Some(rule) = &cur_state.reduce.get(&current){
+            let clause = rule.clause;
+            let reduce_state = rule.len();
+            if clause.symbol == syntax::END_VARIABLE {
+                return Action::Accept;
             }
-            if let Some(rule) = &cur_state.reduce.get(&current){
-                let clause = rule.clause;
-                let reduce_state = rule.len();
-                if clause.symbol == syntax::END_VARIABLE {
-                    return Action::Accept;
-                }
-                return Action::Reduce(clause, reduce_state)
-            }
+            return Action::Reduce(clause, reduce_state)
         }
 
         return Action::Reject;
@@ -73,14 +72,9 @@ impl StateMachine {
 
         for (id, set) in sets.sets.iter().enumerate() {
             for (rule, follow) in set.reduce(&sets.rules) {
-                if let Some(next_state_id) = machine.states[id].next.get(&follow.into()) {
-                    println!("Found shift-reduce conflict in state {} from rule {} and shift to {:?}", id, rule, machine.states[*next_state_id].next.keys())
-                    
-                }
                 if let Some(current_rule) = &machine.states[id].reduce.get(&follow){
                     println!("Found reduce-reduce conflict in state {} between rule {} and {}", id, current_rule, rule)
                 }
-
                 machine.states[id].reduce.insert(follow, rule);
             }
         }

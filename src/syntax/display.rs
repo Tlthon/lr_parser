@@ -12,7 +12,7 @@ impl Display for Terminal {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         if self.symbol == END_TERMINAL {
             // return write!(f, "EOF");
-            return f.pad(&format!("{:.3}", "EOF"))
+            return f.pad(&format!("EOF"))
         }
         return f.pad(&format!("{:.1}", self.symbol))
     }
@@ -47,13 +47,25 @@ impl Debug for MixedChar {
         Display::fmt(self, f)
     }
 }
+
+impl MixedChar {
+    pub fn display_len(&self) -> usize{
+        match self {
+            MixedChar::Terminal(t) if t.symbol == END_TERMINAL => 3,
+            MixedChar::Variable(v) if v.symbol == END_VARIABLE => 6,
+            _ => 1
+
+        }
+    }
+}
+
 impl Display for MixedString {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         for character in self.data.iter() {
-            write!(f, "{}", character)?
+            write!(f, "{} ", character)?
         }
         if self.data.len() == 0 {
-            write!(f, "\u{03B5}")?;
+            write!(f, "\u{03B5} ")?;
         }
 
         return Ok(());
@@ -104,5 +116,4 @@ impl Display for Rule {
         Ok(())
     }
 }
-
 

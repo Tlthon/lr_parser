@@ -118,9 +118,17 @@ impl ItemSets {
         self.rules.push(rule);
     }
 
-    pub fn add_from_string(&mut self, string_rule: &str) -> Option<()>{
-        self.rules.push(string_rule.try_into().ok()?);
-        Some(())
+    pub fn add_from_string(&mut self, string_rule: &str) -> bool{
+        let Ok(rule) = string_rule.try_into() else {
+            return false
+        };
+        self.rules.push(rule);
+        true
+    }
+
+    pub fn clear(&mut self) {
+        self.sets = Vec::default();
+        self.ordering_map = Vec::default();
     }
 
     pub fn generate_next(&mut self){
@@ -129,12 +137,9 @@ impl ItemSets {
         let mut first_item = ItemSet::new();
         let mut index = 0;
 
-        first_item.add_rule(&self.rules[0], 0, 0, &[syntax::Terminal::end()]);
+        first_item.add_rule(&self.rules[0], 0, 0, &[syntax::Terminal::epsilon()]);
         let first = first_follow::First::from_rule(&self.rules);
-        // first.print();
         let follows = first_follow::Follow::new(&first, &self.rules);
-        // follows.print();
-        // println!("{:?}", rule_graph.toposort());
         let kernels: Vec<usize> = rule_graph.gets_rule(first_item.symbols.iter().filter_map(|symbol| symbol.try_into().ok()));
 
         for kernel in kernels {
@@ -168,17 +173,5 @@ impl ItemSets {
             self.ordering_map.push(next_val);
             index += 1;
         }
-    }
-}
-
-impl Display for ItemSets {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (number, item_set) in self.sets.iter().enumerate() {
-            write!(f, "Item set {}\n",number)?;
-            for item in &item_set.items {
-                write!(f, "{}\n", item.display(&self.rules))?;
-            }
-        }
-        Ok(())
     }
 }

@@ -55,8 +55,9 @@ pub struct Follow{
 
 impl Follow {
     pub fn new(first_set: &First, rules: &[Rule]) -> Self{
-        let mut track: MapSet<Variable, Variable>= MapSet::default();
+        let mut track: MapSet<Variable, Variable> = MapSet::default();
         let mut map: MapSet<Variable, Terminal> = MapSet::default();
+        map.add(Variable::accept(), Terminal::epsilon());
         for rule in rules{
             let clause = rule.clause;
             for (id, variable) in rule.output.data.iter().enumerate().filter_map(|(id, char)| Some((id, char.try_into().ok()?))) {
@@ -73,7 +74,7 @@ impl Follow {
                 match next {
                     Terminal(next_ter) => map.add(variable, next_ter.to_owned()),
                     Variable(next_var) => {
-                        // if q -> Ɛ is a production act as if A->pB is a production
+                        // if q -> Ɛ is a production act as if A->pB is also production
                         if first_set.empty.contains(next_var) && variable != clause{
                             track.add(variable, clause);
                         }

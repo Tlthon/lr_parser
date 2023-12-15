@@ -1,3 +1,4 @@
+use getch_rs::Getch;
 use prettytable::{Table, Row, Cell};
 
 use crate::{parsing_table::StateMachine, syntax::Rule, parsing::ParsingProcess, itemset::ItemSets};
@@ -18,32 +19,18 @@ fn main() {
         rule.add_terminal(syntax::END_TERMINAL);
         itemset.add_rule(rule);
     }
-    itemset.add_from_string("E:T");
-    itemset.add_from_string("E:(E)");
-    itemset.add_from_string("T:n");
-    itemset.add_from_string("T:T+n");
-
-    // itemset.add_from_string("N:MN");
-    // itemset.add_from_string("N:");
-
-    // itemset.add_from_string("M:0");
-    // itemset.add_from_string("M:1");
-    // itemset.add_from_string("M:2");
-    // itemset.add_from_string("M:3");
-    // itemset.add_from_string("M:4");
-    // itemset.add_from_string("M:5");
-    // itemset.add_from_string("M:6");
-    // itemset.add_from_string("M:7");
-    // itemset.add_from_string("M:8");
-    // itemset.add_from_string("M:9");
-
-    itemset.generate_next();
-
-    // println!("{}",itemset);
+    itemset.add_from_string("E:E+M");
+    itemset.add_from_string("E:M");
+    itemset.add_from_string("M:M*P");
+    itemset.add_from_string("M:P");
+    itemset.add_from_string("P:n");
+    itemset.add_from_string("P:(E)");
+    edit_rule(&mut itemset);
 
     let machine = StateMachine::from_itemset(&itemset);
 
-    println!("{}", machine.display(&itemset));
+    // println!("{:18}", itemset);
+    println!("{:20}", machine.display(&itemset));
     print!("\nTaking input\n");
     let mut line = std::io::stdin().lines().next().unwrap().unwrap();
     line.push(syntax::END_TERMINAL);
@@ -53,8 +40,50 @@ fn main() {
     let mut history = vec![parser];
     print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
 
+    run_parsing(&machine, history);
+}
+
+fn clear_screen() {
+    print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+}
+
+fn edit_rule(itemset: &mut ItemSets) {
+    clear_screen();
     loop {
-        // println!("{}", parser.display(&machine));
+        println!("Press s to save, a to add new rule, p to print the resulting itemset");
+        let Ok(key_press) = getch_rs::Getch::new().getch() else {break};
+        match key_press {
+            getch_rs::Key::Char('s') => {
+                itemset.clear();
+                itemset.generate_next();
+                return;
+            },
+            getch_rs::Key::Char('p') => {
+                for rule in &itemset.rules {
+                    println!("{}", rule);
+                }
+            },
+            getch_rs::Key::Char('a')=> {
+                loop {
+                    println!("Please type in new rule (format is Clause->MixedString)");
+                    let Some(Ok(line)) = std::io::stdin().lines().next() else {clear_screen();continue };
+                    let success = itemset.add_from_string(&line);
+                    if success { break; }
+                    clear_screen();
+                }
+            }
+            _ => {
+                clear_screen();
+            }
+        }
+
+
+    }
+}
+
+fn run_parsing(machine: &StateMachine, mut history: Vec<ParsingProcess>) {
+    let g = getch_rs::Getch::new();
+    loop {
         let mut table = Table::new();
         table.add_row(Row::new(vec![
             Cell::new("Step"),
@@ -71,7 +100,7 @@ fn main() {
 
         table.printstd();
 
-        println!("Press right arrow to view next step, left arrow to go back 1 step");
+        println!("Press right arrow to view next step, left arrow to go back 1 step, down arrow to exit, up arrow to reset");
         let Ok(key_press) = g.getch() else {break};
         match key_press {
             getch_rs::Key::Right => {
@@ -82,12 +111,22 @@ fn main() {
             },
             getch_rs::Key::Left => {
                 if history.len() > 1 {
-                    history.pop(); 
+                    history.pop();
                 }
             },
-            _ => return,
+            getch_rs::Key::Down=> {
+                return;
+            }
+            getch_rs::Key::Up=> {
+                while history.len() > 1 {
+                    history.pop();
+                }
+            }
+
+            _ => continue
         }
-        print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+        clear_screen();
 
     }
+
 }

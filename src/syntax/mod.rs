@@ -6,6 +6,7 @@ use std::{char, ops::Index, slice::SliceIndex};
 pub const END_TERMINAL: char =  '\u{FDD0}';
 pub const END_VARIABLE: char =  '\u{FDD1}';
 
+pub const EPSILON: char = '\u{03B5}';
 #[derive(Hash, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 pub struct Terminal{
     pub symbol: char
@@ -15,11 +16,17 @@ impl Terminal {
     pub const fn end() -> Terminal {
         Terminal{symbol: END_TERMINAL}
     }
+    pub const fn epsilon() -> Terminal {Terminal{symbol: EPSILON}}
 }
 
 #[derive(Hash, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
 pub struct Variable{
     pub symbol: char
+}
+impl Variable {
+    pub const fn accept() -> Variable {
+        Variable{symbol: END_VARIABLE}
+    }
 }
 
 #[derive(Hash, PartialEq, Eq, Clone, Copy, PartialOrd, Ord)]
