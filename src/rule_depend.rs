@@ -8,7 +8,11 @@ type Set<T> = BTreeSet<T>;
 type Map<K,V> = HashMap<K,V>;
 
 fn is_connect(edges: & [Rule], nodes: & [Variable], u: usize, v:usize) -> bool {
-    edges.iter().filter(|e| {e.clause == nodes[u] && e.output.data[0] == nodes[v].into()}).peekable().peek().is_some()
+    edges.iter().filter(
+        |e| {
+            e.clause == nodes[u] && e.output.data.get(0) == Some(&nodes[v].into())
+        })
+        .peekable().peek().is_some()
 }
 
 fn check_edge(group1_id: &Set<usize>, group2_id: &Set<usize>, rules: &[Rule], variables: &[Variable]) -> bool{
@@ -49,7 +53,6 @@ impl RuleGraph {
         let variables:Set<Variable> = rules.iter().map(|rule| rule.clause).collect();
         let variables:Vec<Variable> = variables.iter().map(|x| *x).collect();
         let node_group = Tarjan::new(&rules, &variables, is_connect).run();
-        println!("{:?} {:?}", variables, node_group);
 
         let indexing = node_group.iter().enumerate().fold(Map::new(), |mut map: Map<Variable, usize>, (id, variable_set)|{
             variable_set.iter().for_each(|variable_id| {map.insert(variables[*variable_id],  id);});
