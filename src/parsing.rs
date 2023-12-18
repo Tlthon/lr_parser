@@ -1,7 +1,7 @@
 use std::fmt::Display;
 
-use crate::{parsing_table::StateMachine, syntax::{MixedString, TerminalString}};
-
+use crate::parsing_table::{IStateMachine};
+use crate::syntax::{MixedString, TerminalString};
 #[derive(Clone)]
 pub struct ParsingProcess{
     input: TerminalString,
@@ -11,15 +11,17 @@ pub struct ParsingProcess{
     stack: Vec<usize>,
 }
 
-impl ParsingProcess {
-    pub fn new(input: &[char]) -> ParsingProcess{
+impl  ParsingProcess{
+    pub fn new(input: &[char]) -> ParsingProcess {
         let input = TerminalString::from(input);
 
-        ParsingProcess { input ,string_index: 0, state_index: 0, output: MixedString::new(), stack: vec![0] }
+        ParsingProcess { input, string_index: 0, state_index: 0, output: MixedString::new(), stack: vec![0] }
     }
+}
+impl <'a> ParsingProcess  {
     #[allow(unused)]
-    pub fn run(&mut self, machine: &StateMachine) -> Option<bool>{
-        let action = machine.next(self.state_index, self.input.get(self.string_index).map(Into::into));
+    pub fn run<Machine: IStateMachine<'a>>(&mut self, machine: &Machine) -> Option<bool>{
+        let action = machine.next_action(self.state_index, self.input.get(self.string_index).map(Into::into));
         match action {
             crate::parsing_table::Action::Accept => {
                 return Some(true);
@@ -37,18 +39,18 @@ impl ParsingProcess {
                 for _ in 0..pop_count{
                     self.output.pop();
                     self.stack.pop();
-    
+
                 }
                 self.output.push_variable(variable);
                 self.state_index = machine.reduce_state(*self.stack.last().unwrap(), variable);
                 self.stack.push(self.state_index);
             }
         }
-        return None;    
+        return None;
     }
 
-    pub fn get_next(&self, machine: &StateMachine) -> Option<Self>{
-        let action = machine.next(self.state_index, self.input.get(self.string_index).map(Into::into));
+    pub fn get_next<Machine: IStateMachine<'a>>(&self, machine: &Machine) -> Option<Self>{
+        let action = machine.next_action(self.state_index, self.input.get(self.string_index).map(Into::into));
         let mut next_step = self.clone();
         match action {
             crate::parsing_table::Action::Accept => {
@@ -73,12 +75,12 @@ impl ParsingProcess {
                 next_step.stack.push(next_step.state_index);
             }
         }
-        return Some(next_step);    
+        return Some(next_step);
     }
 
 
-    pub fn display<'a>(&'a self, machine: &'a StateMachine) -> PrintingString {
-        let action = machine.next(self.state_index, self.input.get(self.string_index).map(Into::into));
+    pub fn display<Machine: IStateMachine<'a>>(&'a self, machine: &'a Machine) -> PrintingString {
+        let action = machine.next_action(self.state_index, self.input.get(self.string_index).map(Into::into));
         let next_action = match action {
             crate::parsing_table::Action::Accept => "Accept",
             crate::parsing_table::Action::Reject => "Reject",

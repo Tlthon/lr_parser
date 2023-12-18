@@ -3,8 +3,8 @@ use crate::syntax::Rule;
 use super::{Item, DOT, ItemSets};
 
 pub struct ItemDisplay<'a> {
-    pub(super) item: &'a Item,
-    pub(super) rules: &'a [Rule]
+    pub(in crate::itemset) item: &'a Item,
+    pub(in crate::itemset) rules: &'a [Rule]
 }
 
 impl Display for ItemDisplay<'_> {
@@ -34,9 +34,9 @@ impl Display for ItemDisplay<'_> {
             }
         }
         if let Some(width) = f.width() {
-            write!(f, ", {:>width$}]", self.item.follow, width = width - strlen)?;
+            write!(f, " {:>width$}]", "", width = width - strlen)?;
         }else {
-            write!(f, ", {}]", self.item.follow)?;
+            write!(f, " {}]", "")?;
         }
         Ok(())
     }
@@ -58,16 +58,3 @@ impl Display for ItemSets {
         Ok(())
     }
 }
-
-// pub struct RulesDisplay<'a> {
-//     pub(super) rules: &'a [Rule]
-// }
-//
-// impl Display for RulesDisplay {
-//     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
-//         for rule in self.rules {
-//             write!(f, "{}", rule)?;
-//         }
-//         Ok(())
-//     }
-// }

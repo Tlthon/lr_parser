@@ -1,7 +1,8 @@
+
 use std::fmt::Display;
-use crate::{itemset::ItemSets, syntax};
+use crate::{itemset::lr_one::ItemSets, syntax};
+use crate::parsing_table::lr_one::{State, StateMachine};
 use crate::syntax::MixedChar;
-use super::{State, StateMachine};
 
 pub struct StateMachineDisplay<'a> {
     states: &'a [State],
@@ -9,7 +10,7 @@ pub struct StateMachineDisplay<'a> {
 }
 
 impl<'a> StateMachineDisplay<'a> {
-    pub(super) fn new(machine: &'a StateMachine, sets: &'a ItemSets) -> Self {
+    pub fn new(machine: &'a StateMachine, sets: &'a ItemSets) -> Self {
         Self { states: &machine.states, sets }
     }
 }

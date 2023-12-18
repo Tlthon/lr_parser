@@ -11,8 +11,6 @@ pub trait JoinAble: Default {
 impl<T: Hash + Eq> JoinAble for HashSet<T>{
     type Content = T;
     fn append(&mut self, other: Self) {
-        // self.extend(other.into_iter());
-
         Extend::extend(self, other);
     }
     fn insert(&mut self, new_value: Self::Content) {

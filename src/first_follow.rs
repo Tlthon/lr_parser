@@ -1,4 +1,3 @@
-use std::cell::OnceCell;
 use crate::{syntax::{Rule, Terminal, Variable}};
 
 use std::collections::HashSet as Set;
