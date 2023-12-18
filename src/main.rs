@@ -4,7 +4,7 @@ use std::{env, fs};
 
 use prettytable::{Cell, Row, Table};
 
-use crate::{parsing::ParsingProcess};
+use crate::parsing::ParsingProcess;
 use crate::parsing_table::IStateMachine;
 
 pub mod itemset;
