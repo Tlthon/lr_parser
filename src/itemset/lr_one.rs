@@ -1,10 +1,10 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{HashMap};
 use std::iter;
 use crate::rule_depend::RuleGraph;
 use crate::{first_follow, syntax};
 use crate::itemset::item_lookahead::ItemSet;
 use crate::syntax::{MixedChar, Rule};
-use super::Item as _;
+
 // mod display;
 
 pub struct ItemSets {
@@ -53,7 +53,7 @@ impl ItemSets {
 
         for closure in &closures {
             let output = &self.rules[*closure].clause;
-            let follow_set = follows.get_filtered(output, iter::once(&index).chain(&closures));
+            let follow_set = follows.get_filtered(output, iter::once(&index).chain(&closures), []);
             first_item.add_rule(&self.rules[*closure], 0, *closure, &follow_set);
         }
         self.sets.push(first_item);
@@ -70,7 +70,7 @@ impl ItemSets {
                     for non_kernel in  non_kernels.iter(){
                         let kernels = new_itemset.items.iter().map(|item| &item.rule_number);
                         let output = &self.rules[*non_kernel].clause;
-                        let follow_set = follows.get_filtered(output, kernels.chain(&non_kernels));
+                        let follow_set = follows.get_filtered(output, kernels.chain(&non_kernels), cur_item.kernel_follow());
                         new_itemset.add_rule(&self.rules[*non_kernel], 0, *non_kernel, &follow_set)
                     }
                     if let Some(new_index) = itemmaps.get(&new_itemset) {

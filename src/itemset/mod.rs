@@ -6,10 +6,10 @@ mod item_lookahead;
 
 mod display;
 
-use std::fmt::Display;
+
 pub use lr_one::ItemSets as LROneItemSets;
 pub use lr_zero::ItemSets as LRZeroItemSets;
-use crate::syntax::{MixedChar, Rule, Terminal};
+use crate::syntax::{MixedChar, Rule, Variable};
 
 pub trait Item <'display>{
     type Display;

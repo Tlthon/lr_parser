@@ -1,4 +1,4 @@
-use std::collections::{BTreeSet, HashMap};
+use std::collections::{HashMap};
 use crate::itemset::item_no_lookahead::ItemSet;
 use crate::rule_depend::RuleGraph;
 

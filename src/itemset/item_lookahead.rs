@@ -126,4 +126,9 @@ impl ItemSet {
             }
         })
     }
+
+    pub fn kernel_follow(&self) -> impl Iterator<Item = (usize, Terminal)> + '_{
+        self.items.iter().filter(|item| item.kernel)
+            .map(|kernel| (kernel.rule_number, kernel.follow))
+    }
 }
