@@ -2,7 +2,7 @@
 use std::fmt::Display;
 use crate::{itemset::lr_zero::ItemSets, syntax};
 use crate::parsing_table::lr_zero::{State, StateMachine};
-use crate::syntax::MixedChar;
+
 
 pub struct StateMachineDisplay<'a> {
     states: &'a [State],

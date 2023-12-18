@@ -1,5 +1,5 @@
 use std::fmt::Display;
-use crate::itemset::lr_one::ItemSets;
+
 use crate::syntax::{Terminal, Variable};
 
 mod display;

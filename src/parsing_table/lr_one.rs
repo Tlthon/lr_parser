@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 use crate::itemset::lr_one::ItemSets;
-use crate::parsing_table::{Action, display};
+use crate::parsing_table::{Action};
 use crate::parsing_table::display::lr_one::StateMachineDisplay;
 use crate::syntax;
 use crate::syntax::{MixedChar, Rule, Terminal, Variable};

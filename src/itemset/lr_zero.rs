@@ -1,6 +1,6 @@
 use std::collections::{BTreeSet, HashMap};
 use crate::rule_depend::RuleGraph;
-use crate::first_follow;
+
 use crate::syntax::{MixedChar, Rule};
 mod display;
 
