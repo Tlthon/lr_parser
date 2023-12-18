@@ -4,6 +4,7 @@ use crate::itemset::LROneItemSets;
 use crate::parsing_table::lr_one::{State, StateMachine};
 use crate::syntax::MixedChar;
 use crate::syntax;
+use crate::itemset::Item as _;
 
 pub struct StateMachineDisplay<'a> {
     states: &'a [State],

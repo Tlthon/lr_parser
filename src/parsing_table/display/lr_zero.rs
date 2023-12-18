@@ -3,6 +3,7 @@ use std::fmt::Display;
 use crate::{itemset::LRZeroItemSets};
 use crate::syntax;
 use crate::parsing_table::lr_zero::{State, StateMachine};
+use crate::itemset::Item as _;
 
 
 pub struct StateMachineDisplay<'a> {

@@ -11,7 +11,7 @@ pub struct ItemSets {
     pub ordering_map: Vec<Vec<(MixedChar, usize)>>,
 }
 
-impl super::ItemSets for ItemSets {
+impl super::ItemSets<'_> for ItemSets {
     type Item = super::item_no_lookahead::Item;
     type ItemSet = super::item_no_lookahead::ItemSet;
     fn item_sets(&self) -> &[Self::ItemSet] { &self.sets }

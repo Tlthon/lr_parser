@@ -48,10 +48,10 @@ pub struct ItemSet{
     pub(crate) symbols: BTreeSet<MixedChar>,
 }
 
-impl<'item, 'item_iterator: 'item> super::ItemSet<'item, 'item_iterator> for ItemSet {
+impl<'item_iterator> super::ItemSet<'item_iterator> for ItemSet {
     type Item = Item;
-    type ItemIterator = std::collections::btree_set::Iter<'item, Item>;
-    fn items(&'item self) -> Self::ItemIterator { self.items.iter() }
+    type ItemIterator = std::collections::btree_set::Iter<'item_iterator, Item>;
+    fn items(&'item_iterator self) -> Self::ItemIterator { self.items.iter() }
 }
 
 impl ItemSet {

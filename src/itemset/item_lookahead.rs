@@ -52,7 +52,7 @@ pub struct ItemSet{
     pub(crate) symbols: BTreeSet<MixedChar>,
 }
 
-impl<'item, 'item_iterator: 'item> super::ItemSet<'item, 'item_iterator> for ItemSet {
+impl<'item> super::ItemSet<'item> for ItemSet {
     type Item = Item;
     type ItemIterator = std::collections::btree_set::Iter<'item, Self::Item>;
     fn items(&'item self) -> Self::ItemIterator { self.items.iter() }

@@ -11,7 +11,7 @@ pub use lr_one::ItemSets as LROneItemSets;
 pub use lr_zero::ItemSets as LRZeroItemSets;
 use crate::syntax::{MixedChar, Rule, Terminal};
 
-trait Item <'display>{
+pub trait Item <'display>{
     type Display;
     fn shift(&self) -> Self;
     fn symbol(&self, rules: &[Rule]) -> Option<MixedChar>;
@@ -21,15 +21,16 @@ trait Item <'display>{
     fn kernel(&self) -> bool;
 }
 
-trait ItemSet <'item, 'item_iterator: 'item>{
-    type Item: Item<'item> ;
+pub trait ItemSet <'item_iterator>
+{
+    type Item: Item<'item_iterator> + 'item_iterator ;
     type ItemIterator: Iterator<Item = &'item_iterator Self::Item>;
-    fn items(&'item self) -> Self::ItemIterator;
+    fn items(&'item_iterator self) -> Self::ItemIterator;
 }
 
-trait ItemSets {
-    type Item: for<'a> Item<'a> ;
-    type ItemSet: for <'a, 'b> ItemSet <'a, 'b>;
+pub trait ItemSets<'a>  {
+    type Item:  Item<'a> + 'a;
+    type ItemSet: ItemSet <'a, Item = Self::Item>;
 
     fn item_sets(&self) -> &[Self::ItemSet];
     fn rules(&self) -> &[Rule];

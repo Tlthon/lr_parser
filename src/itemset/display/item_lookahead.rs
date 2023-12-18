@@ -2,6 +2,7 @@ use std::fmt::Display;
 use crate::syntax::Rule;
 use super::super::item_lookahead::Item;
 use super::DOT;
+use crate::itemset::Item as _;
 
 pub struct ItemDisplay<'a> {
     pub(in crate::itemset) item: &'a Item,

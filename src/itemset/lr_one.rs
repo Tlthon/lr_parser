@@ -3,7 +3,8 @@ use std::iter;
 use crate::rule_depend::RuleGraph;
 use crate::{first_follow, syntax};
 use crate::itemset::item_lookahead::ItemSet;
-use crate::syntax::{MixedChar, Rule, Terminal};
+use crate::syntax::{MixedChar, Rule};
+use super::Item as _;
 // mod display;
 
 pub struct ItemSets {
@@ -12,7 +13,7 @@ pub struct ItemSets {
     pub ordering_map: Vec<Vec<(MixedChar, usize)>>,
 }
 
-impl super::ItemSets for ItemSets {
+impl super::ItemSets<'_> for ItemSets {
     type Item = super::item_lookahead::Item;
     type ItemSet = ItemSet;
     fn item_sets(&self) -> &[Self::ItemSet] { &self.sets }
