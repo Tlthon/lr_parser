@@ -1,16 +1,17 @@
 
 use std::fmt::Display;
-use crate::{itemset::lr_zero::ItemSets, syntax};
+use crate::{itemset::LRZeroItemSets};
+use crate::syntax;
 use crate::parsing_table::lr_zero::{State, StateMachine};
 
 
 pub struct StateMachineDisplay<'a> {
     states: &'a [State],
-    sets: &'a ItemSets,
+    sets: &'a LRZeroItemSets,
 }
 
 impl<'a> StateMachineDisplay<'a> {
-    pub fn new(machine: &'a StateMachine, sets: &'a ItemSets) -> Self {
+    pub fn new(machine: &'a StateMachine, sets: &'a LRZeroItemSets) -> Self {
         Self { states: &machine.states, sets }
     }
 }

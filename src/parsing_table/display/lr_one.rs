@@ -1,16 +1,17 @@
 
 use std::fmt::Display;
-use crate::{itemset::lr_one::ItemSets, syntax};
+use crate::itemset::LROneItemSets;
 use crate::parsing_table::lr_one::{State, StateMachine};
 use crate::syntax::MixedChar;
+use crate::syntax;
 
 pub struct StateMachineDisplay<'a> {
     states: &'a [State],
-    sets: &'a ItemSets,
+    sets: &'a LROneItemSets,
 }
 
 impl<'a> StateMachineDisplay<'a> {
-    pub fn new(machine: &'a StateMachine, sets: &'a ItemSets) -> Self {
+    pub fn new(machine: &'a StateMachine, sets: &'a LROneItemSets) -> Self {
         Self { states: &machine.states, sets }
     }
 }
