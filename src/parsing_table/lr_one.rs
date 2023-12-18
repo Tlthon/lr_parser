@@ -1,6 +1,6 @@
 use std::collections::HashMap;
-use crate::itemset::lr_one::ItemSets;
-use crate::parsing_table::{Action, display};
+// use crate::itemset::LROneItemSets;
+use crate::parsing_table::{Action};
 use crate::parsing_table::display::lr_one::StateMachineDisplay;
 use crate::syntax;
 use crate::syntax::{MixedChar, Rule, Terminal, Variable};
@@ -32,12 +32,12 @@ pub struct StateMachine{
 
 impl<'a> super::IStateMachine<'a> for StateMachine {
     type MachineDisplay = StateMachineDisplay<'a>;
-    type ItemSets =  ItemSets;
-    fn display(&'a self, itemset: &'a ItemSets) -> StateMachineDisplay<'a> {
+    type ItemSets = crate::itemset::LROneItemSets;
+    fn display(&'a self, itemset: &'a Self::ItemSets) -> StateMachineDisplay<'a> {
         StateMachineDisplay::new(&self, &itemset)
     }
 
-    fn from_itemset(sets: &ItemSets) -> Self {
+    fn from_itemset(sets: &Self::ItemSets) -> Self {
         let mut machine = Self{
             states: vec![State::new(); sets.sets.len()]
         };
@@ -80,10 +80,3 @@ impl<'a> super::IStateMachine<'a> for StateMachine {
     }
 
 }
-
-// impl StateMachine {
-//     pub fn display<'a>(&'a self, itemset: &'a ItemSets) -> display::lr_one::StateMachineDisplay<'a> {
-//         display::lr_one::StateMachineDisplay::new(&self, &itemset)
-//     }
-//
-// }

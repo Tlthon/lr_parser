@@ -4,7 +4,7 @@ use std::{env, fs};
 
 use prettytable::{Cell, Row, Table};
 
-use crate::{parsing::ParsingProcess, syntax::Rule};
+use crate::parsing::ParsingProcess;
 use crate::parsing_table::IStateMachine;
 
 pub mod itemset;
@@ -28,8 +28,9 @@ fn main() {
 }
 
 fn lr_zero(file_path: &str) {
-    use crate::{itemset::lr_zero::ItemSets, parsing_table::lr_zero::StateMachine};
-    let mut itemsets = ItemSets::new('E');
+    use crate::itemset::LRZeroItemSets;
+    use parsing_table::lr_zero::StateMachine;
+    let mut itemsets = LRZeroItemSets::new('E');
 
     for line in fs::read_to_string(file_path).unwrap().lines() {
         itemsets.add_from_string(line);
@@ -42,8 +43,9 @@ fn lr_zero(file_path: &str) {
 
 
 fn lr_one(file_path: &str) {
-    use crate::{itemset::lr_one::ItemSets, parsing_table::lr_one::StateMachine};
-    let mut itemsets = ItemSets::new('E');
+    use crate::itemset::LROneItemSets;
+    use parsing_table::lr_one::StateMachine;
+    let mut itemsets = LROneItemSets::new('E');
 
     for line in fs::read_to_string(file_path).unwrap().lines() {
         itemsets.add_from_string(line);
@@ -55,7 +57,7 @@ fn lr_one(file_path: &str) {
 }
 
 fn run_machine<ItemSets, StateMachine>(itemset: &ItemSets, machine: StateMachine)
-    where StateMachine: for<'a> parsing_table::IStateMachine<'a, ItemSets = ItemSets>{
+    where StateMachine: for<'a> IStateMachine<'a, ItemSets = ItemSets>{
     println!("{:20}", machine.display(&itemset));
     print!("\nTaking input\n");
     let mut line = std::io::stdin().lines().next().unwrap().unwrap();

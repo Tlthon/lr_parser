@@ -30,7 +30,7 @@ pub struct StateMachine{
 
 impl<'a> super::IStateMachine<'a> for StateMachine {
     type MachineDisplay = display::lr_zero::StateMachineDisplay<'a>;
-    type ItemSets = crate::itemset::lr_zero::ItemSets;
+    type ItemSets = crate::itemset::LRZeroItemSets;
 
     fn display(&'a self, itemset: &'a Self::ItemSets) -> Self::MachineDisplay{
         Self::MachineDisplay::new(&self, &itemset)

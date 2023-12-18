@@ -1,16 +1,18 @@
 
 use std::fmt::Display;
-use crate::{itemset::lr_one::ItemSets, syntax};
+use crate::itemset::LROneItemSets;
 use crate::parsing_table::lr_one::{State, StateMachine};
 use crate::syntax::MixedChar;
+use crate::syntax;
+use crate::itemset::Item as _;
 
 pub struct StateMachineDisplay<'a> {
     states: &'a [State],
-    sets: &'a ItemSets,
+    sets: &'a LROneItemSets,
 }
 
 impl<'a> StateMachineDisplay<'a> {
-    pub fn new(machine: &'a StateMachine, sets: &'a ItemSets) -> Self {
+    pub fn new(machine: &'a StateMachine, sets: &'a LROneItemSets) -> Self {
         Self { states: &machine.states, sets }
     }
 }
@@ -20,12 +22,16 @@ impl<'a> Display for StateMachineDisplay<'a> {
         for (index, state) in self.states.iter().enumerate(){
             write!(f, "state {}\n", index)?;
             for item in &self.sets.sets[index].items {
-                if !item.kernel() {
-                    continue;
-                }
+                // if !item.kernel() {
+                //     continue;
+                // }
                 f.write_str("    ")?;
                 item.display(&self.sets.rules).fmt(f)?;
+                if item.kernel() {
+                    f.write_str("*")?;
+                }
                 f.write_str("\n")?;
+
             }
             write!(f,"\n")?;
             for(requirement, next_id) in state.next.iter() {

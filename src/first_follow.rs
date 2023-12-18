@@ -1,9 +1,13 @@
 use crate::{syntax::{Rule, Terminal, Variable}};
 
-use std::collections::HashSet as Set;
+use std::collections::{HashSet as Set, HashSet};
+use std::env::var;
+use std::ops::{BitAnd, BitOr};
 use once_cell::sync::Lazy;
 use crate::data_structure::map_set::MapSet;
 use crate::data_structure::JoinAble;
+use crate::itemset::Item;
+
 static DEFAULT_MAPSET:Lazy<MapSet<Variable, Terminal>> = Lazy::new(||MapSet::default());
 
 fn track_adding<T>(current_val: &Variable, track: &MapSet<Variable, Variable>, visited: &mut Set<Variable>, map: &mut MapSet<Variable, Terminal, T>)
@@ -55,14 +59,16 @@ impl First {
 
 #[derive(Default)]
 pub struct Follow{
-    map: MapSet<Variable, Terminal, MapSet<usize, Terminal>>
+    map: MapSet<Variable, Terminal, MapSet<usize, Terminal>>,
+    rule_track: MapSet<Variable, usize>,
 }
 
 impl Follow {
     pub fn new(first_set: &First, rules: &[Rule]) -> Self{
         let mut track: MapSet<Variable, Variable> = MapSet::default();
+        let mut rule_track: MapSet<Variable, usize> = MapSet::default();
+
         let mut map: MapSet<Variable, Terminal, MapSet<usize, Terminal>> = MapSet::default();
-        // map.add(Variable::accept(), Terminal::epsilon());
         for (rule_id, rule) in rules.iter().enumerate(){
             let clause = rule.clause;
             for (id, variable) in rule.output.data.iter().enumerate().filter_map(|(id, char)| Some((id, char.try_into().ok()?))) {
@@ -70,6 +76,7 @@ impl Follow {
                     
                     // A-> pB is a production
                     if variable != clause {
+                        rule_track.add(variable, rule_id);
                         track.add(variable, clause);
                     }
                     break;
@@ -81,10 +88,12 @@ impl Follow {
                     Variable(next_var) => {
                         // if q -> Ɛ is a production act as if A->pB is also production
                         if first_set.empty.contains(next_var) && variable != clause{
+                            rule_track.add(variable, rule_id);
                             track.add(variable, clause);
                         }
                         // map.append(variable, first_set.map.get(next_var).to_owned())
                         map.append(variable, MapSet::new(rule_id, first_set.map.get(next_var).to_owned()))
+                        // follows.append(first_set.map.get(next_var).into());
                     },
                 }
             }
@@ -93,13 +102,21 @@ impl Follow {
             track_adding(variable, &track,&mut Set::new(), &mut map)
         }
 
-        Self{map}
+        Self{map, rule_track}
     }
     pub fn get(&self, key: &Variable) -> Set<Terminal> {
         self.map.get(key).all().unwrap_or_default()
     }
-    pub fn get_filtered<'a>(&self, key: &Variable, allowed_rule: impl IntoIterator<Item = &'a usize>) -> Set<Terminal> {
-        self.map.get(key).aggregate(allowed_rule).unwrap_or_default()
+    pub fn get_filtered<'a>(&self, key: &Variable,
+                            available_rule: impl IntoIterator<Item = &'a usize>,
+                            kernel_follow: impl IntoIterator<Item = (usize, Terminal)>) -> Set<Terminal> {
+        let mut first_val = self.map.get(key).aggregate(available_rule).unwrap_or_default(); // This is from A->aBc
+        for (rule_id, rule_follow) in kernel_follow{
+            if self.rule_track.get(key).contains(&rule_id) {
+                first_val.insert(rule_follow);
+            }
+        }
+        first_val
     }
 
     pub fn print(&self) {

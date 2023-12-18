@@ -1,6 +1,8 @@
 use std::fmt::Display;
 use crate::syntax::Rule;
-use super::{Item, DOT, ItemSets};
+use super::super::item_no_lookahead::Item;
+use super::DOT;
+use crate::itemset::Item as _;
 
 pub struct ItemDisplay<'a> {
     pub(in crate::itemset) item: &'a Item,
@@ -34,27 +36,11 @@ impl Display for ItemDisplay<'_> {
             }
         }
         if let Some(width) = f.width() {
-            write!(f, ", {:>width$}]", self.item.follow, width = width - strlen)?;
+            write!(f, " {:>width$}]", "", width = width - strlen)?;
         }else {
-            write!(f, ", {}]", self.item.follow)?;
+            write!(f, " {}]", "")?;
         }
         Ok(())
     }
 }
 
-impl Display for ItemSets {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (number, item_set) in self.sets.iter().enumerate() {
-            write!(f, "Item set {}\n",number)?;
-            for item in &item_set.items {
-                // write!(f, "{}\n", item.display(&self.rules))?;
-                item.display(&self.rules).fmt(f)?;
-                if item.kernel {
-                    write!(f, "*")?;
-                }
-                write!(f, "\n")?;
-            }
-        }
-        Ok(())
-    }
-}
