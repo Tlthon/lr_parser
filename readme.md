@@ -10,7 +10,7 @@ This project aim to create the
     ```
 + Install through installer (for windows)
 
-  https://static.rust-lang.org/rustup/dist/i686-pc-windows-gnu/rustup-init.exe
+  [Installing Rust](https://www.rust-lang.org/tools/install)
      
 
 ## Installation
