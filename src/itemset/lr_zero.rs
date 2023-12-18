@@ -62,7 +62,7 @@ impl ItemSet {
     }
     fn add_kernel(&mut self, rule:&Rule, dot:usize, rule_number:usize)
     {
-        self.items.insert(Item::new(rule_number, dot, false));
+        self.items.insert(Item::new(rule_number, dot, true));
 
         if let Some(character) = rule.output.data.get(dot){
             self.symbols.insert(*character);
@@ -118,8 +118,8 @@ pub struct ItemSets {
 }
 
 impl ItemSets {
-    pub fn new() -> Self {
-        Self { rules: Vec::default(), sets: Vec::default(), ordering_map: Vec::default() }
+    pub fn new(last_variable: char) -> Self {
+        Self { rules: vec![Rule::end(last_variable)], sets: Vec::default(), ordering_map: Vec::default() }
     }
     pub fn add_rule(&mut self, rule: Rule) {
         self.rules.push(rule);

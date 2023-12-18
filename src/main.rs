@@ -1,6 +1,6 @@
 #![allow(dead_code)]
 
-use std::fs;
+use std::{env, fs};
 
 use prettytable::{Cell, Row, Table};
 
@@ -17,64 +17,45 @@ mod data_structure;
 pub mod first_follow;
 
 fn main() {
-    lr_one();
+    let file_path = "rule.txt";
+    println!("read rule from file: {file_path}");
+
+    let args: Vec<String> = env::args().collect();
+    match args.get(1) {
+        Some(input) if input == "lr_zero" => lr_zero(file_path),
+        _ => lr_one(file_path),
+    }
 }
 
-fn lr_zero() {
+fn lr_zero(file_path: &str) {
     use crate::{itemset::lr_zero::ItemSets, parsing_table::lr_zero::StateMachine};
-    let mut itemset = ItemSets::new();
-    {
-        let mut rule = Rule::new(syntax::END_VARIABLE);
-        rule.add_variable('E');
-        rule.add_terminal(syntax::END_TERMINAL);
-        itemset.add_rule(rule);
-    }
-
-    let file_path = "rule.txt";
-    println!("read rule from file: {file_path}");
+    let mut itemsets = ItemSets::new('E');
 
     for line in fs::read_to_string(file_path).unwrap().lines() {
-        itemset.add_from_string(line);
+        itemsets.add_from_string(line);
     }
 
-    itemset.generate_next();
-
-    let machine = StateMachine::from_itemset(&itemset);
-
-    println!("{:20}", machine.display(&itemset));
-    print!("\nTaking input\n");
-    let mut line = std::io::stdin().lines().next().unwrap().unwrap();
-    line.push(syntax::END_TERMINAL);
-    let input_vec: Vec<char> = line.chars().collect();
-    let parser = ParsingProcess::new(&input_vec);
-    print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
-
-    run_parsing(&machine, vec![parser]);
-
+    itemsets.generate_next();
+    let machine = StateMachine::from_itemset(&itemsets);
+    run_machine(&itemsets, machine);
 }
 
 
-fn lr_one() {
+fn lr_one(file_path: &str) {
     use crate::{itemset::lr_one::ItemSets, parsing_table::lr_one::StateMachine};
-    let mut itemset = ItemSets::new();
-    {
-        let mut rule = Rule::new(syntax::END_VARIABLE);
-        rule.add_variable('E');
-        rule.add_terminal(syntax::END_TERMINAL);
-        itemset.add_rule(rule);
-    }
-
-    let file_path = "rule.txt";
-    println!("read rule from file: {file_path}");
+    let mut itemsets = ItemSets::new('E');
 
     for line in fs::read_to_string(file_path).unwrap().lines() {
-        itemset.add_from_string(line);
+        itemsets.add_from_string(line);
     }
 
-    itemset.generate_next();
+    itemsets.generate_next();
+    let machine = StateMachine::from_itemset(&itemsets);
+    run_machine(&itemsets, machine);
+}
 
-    let machine = StateMachine::from_itemset(&itemset);
-
+fn run_machine<ItemSets, StateMachine>(itemset: &ItemSets, machine: StateMachine)
+    where StateMachine: for<'a> parsing_table::IStateMachine<'a, ItemSets = ItemSets>{
     println!("{:20}", machine.display(&itemset));
     print!("\nTaking input\n");
     let mut line = std::io::stdin().lines().next().unwrap().unwrap();

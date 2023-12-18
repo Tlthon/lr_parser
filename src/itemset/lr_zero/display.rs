@@ -47,7 +47,6 @@ impl Display for ItemSets {
         for (number, item_set) in self.sets.iter().enumerate() {
             write!(f, "Item set {}\n",number)?;
             for item in &item_set.items {
-                // write!(f, "{}\n", item.display(&self.rules))?;
                 item.display(&self.rules).fmt(f)?;
                 if item.kernel {
                     write!(f, "*")?;

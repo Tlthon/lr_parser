@@ -35,6 +35,16 @@ pub enum MixedChar{
     Variable(Variable)
 }
 
+impl MixedChar {
+    fn variable(symbol: char) -> Self {
+        Self::Variable(Variable{symbol})
+    }
+    fn terminal(symbol: char) -> Self {
+        Self::Terminal(Terminal{symbol})
+    }
+
+}
+
 #[derive(Clone)]
 pub struct MixedString{
     pub data: Vec<MixedChar>
@@ -106,6 +116,13 @@ impl Rule {
             output: MixedString{data: Vec::new()}
         }
     }
+    pub fn end(end:char) -> Self {
+        Self {
+            clause: Variable{symbol: END_VARIABLE},
+            output: MixedString{data : vec![MixedChar::variable(end), MixedChar::terminal(END_TERMINAL)]}
+        }
+    }
+
     pub fn add_terminal(&mut self,terminal: char){
         self.output.data.push(MixedChar::Terminal(Terminal { symbol: terminal }))
     }
