@@ -20,6 +20,40 @@ fn main() {
     lr_one();
 }
 
+fn lr_zero() {
+    use crate::{itemset::lr_zero::ItemSets, parsing_table::lr_zero::StateMachine};
+    let mut itemset = ItemSets::new();
+    {
+        let mut rule = Rule::new(syntax::END_VARIABLE);
+        rule.add_variable('E');
+        rule.add_terminal(syntax::END_TERMINAL);
+        itemset.add_rule(rule);
+    }
+
+    let file_path = "rule.txt";
+    println!("read rule from file: {file_path}");
+
+    for line in fs::read_to_string(file_path).unwrap().lines() {
+        itemset.add_from_string(line);
+    }
+
+    itemset.generate_next();
+
+    let machine = StateMachine::from_itemset(&itemset);
+
+    println!("{:20}", machine.display(&itemset));
+    print!("\nTaking input\n");
+    let mut line = std::io::stdin().lines().next().unwrap().unwrap();
+    line.push(syntax::END_TERMINAL);
+    let input_vec: Vec<char> = line.chars().collect();
+    let parser = ParsingProcess::new(&input_vec);
+    print!("{esc}[2J{esc}[1;1H", esc = 27 as char);
+
+    run_parsing(&machine, vec![parser]);
+
+}
+
+
 fn lr_one() {
     use crate::{itemset::lr_one::ItemSets, parsing_table::lr_one::StateMachine};
     let mut itemset = ItemSets::new();
