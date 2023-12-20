@@ -137,15 +137,15 @@ impl ItemSets {
             index += 1;
         }
         let mut translation = vec![];
-        let mut j = 0;
+        let mut i = 0;
         for same_kernel in same_kernels {
             let (outer, into) = same_kernel;
-            while j < outer {
-                translation.push(j);
-                self.sets.push(sets[j].clone());
-                j += 1;
+            while i < outer {
+                translation.push(i);
+                self.sets.push(sets[i].clone());
+                i += 1;
             }
-            translation.push(j);
+            i+=1;
             let prev = prev[outer].unwrap(); // unwrap will never fall otherwise it wouldn't be in same_kernels
             let old_itemset = sets[outer].clone();
             sets[into].merge(old_itemset);
@@ -153,9 +153,9 @@ impl ItemSets {
             ordering_map[prev].remove(&outer);
             ordering_map[prev].insert(into, a);
         }
-        while j < sets.len() {
-            translation.push(j);
-            j += 1;
+        while i < sets.len() {
+            translation.push(i);
+            i += 1;
         }
 
         for ordering_map in ordering_map {
