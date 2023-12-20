@@ -22,9 +22,9 @@ impl<'a> Display for StateMachineDisplay<'a> {
         for (index, state) in self.states.iter().enumerate(){
             write!(f, "state {}\n", index)?;
             for item in &self.sets.sets[index].items {
-                // if !item.kernel() {
-                //     continue;
-                // }
+                if !item.kernel() {
+                    continue;
+                }
                 f.write_str("    ")?;
                 item.display(&self.sets.rules).fmt(f)?;
                 if item.kernel() {

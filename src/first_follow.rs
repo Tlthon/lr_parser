@@ -1,17 +1,17 @@
 use crate::{syntax::{Rule, Terminal, Variable}};
 
-use std::collections::{HashSet as Set, HashSet};
+use std::collections::{HashSet as Set};
 use std::env::var;
-use std::ops::{BitAnd, BitOr};
 use once_cell::sync::Lazy;
 use crate::data_structure::map_set::MapSet;
 use crate::data_structure::JoinAble;
-use crate::itemset::Item;
 
 static DEFAULT_MAPSET:Lazy<MapSet<Variable, Terminal>> = Lazy::new(||MapSet::default());
 
-fn track_adding<T>(current_val: &Variable, track: &MapSet<Variable, Variable>, visited: &mut Set<Variable>, map: &mut MapSet<Variable, Terminal, T>)
-where T: JoinAble + Clone{
+fn track_adding<T, Key, Value>(current_val: &Key, track: &MapSet<Key, Key>, visited: &mut Set<Key>, map: &mut MapSet<Key, Value, T>)
+where T: JoinAble + Clone,
+      Key: Copy + std::hash::Hash + std::cmp::Eq,
+      Value: std::hash::Hash+ Eq + Clone{
     if visited.contains(current_val) {
         return;
     }
@@ -99,7 +99,8 @@ impl Follow {
             }
         }
         for variable in track.keys() {
-            track_adding(variable, &track,&mut Set::new(), &mut map)
+            track_adding(variable, &track,&mut Set::new(), &mut map);
+            track_adding(variable, &track,&mut Set::new(), &mut rule_track);
         }
 
         Self{map, rule_track}
@@ -111,8 +112,9 @@ impl Follow {
                             available_rule: impl IntoIterator<Item = &'a usize>,
                             kernel_follow: impl IntoIterator<Item = (usize, Terminal)>) -> Set<Terminal> {
         let mut first_val = self.map.get(key).aggregate(available_rule).unwrap_or_default(); // This is from A->aBc
+        let rules = self.rule_track.get(key);
         for (rule_id, rule_follow) in kernel_follow{
-            if self.rule_track.get(key).contains(&rule_id) {
+            if rules.contains(&rule_id) {
                 first_val.insert(rule_follow);
             }
         }

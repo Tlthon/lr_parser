@@ -1,4 +1,5 @@
 use std::fmt::Display;
+use crate::itemset::ItemSets;
 
 use crate::syntax::{Terminal, Variable};
 
@@ -15,7 +16,7 @@ pub enum Action{
 
 pub trait IStateMachine<'a> {
     type MachineDisplay: Display;
-    type ItemSets;
+    type ItemSets: ItemSets<'a>;
     fn display(&'a self, itemset: &'a Self::ItemSets) -> Self::MachineDisplay;
     fn from_itemset(sets: &Self::ItemSets) -> Self;
     fn next_action(&self, index: usize, rest: Option<Terminal>) -> Action;

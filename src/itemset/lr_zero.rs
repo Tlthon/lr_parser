@@ -1,5 +1,6 @@
 use std::collections::{HashMap};
 use crate::itemset::item_no_lookahead::ItemSet;
+use crate::itemset::ItemSets as _;
 use crate::rule_depend::RuleGraph;
 
 use crate::syntax::{MixedChar, Rule};
@@ -15,10 +16,13 @@ impl super::ItemSets<'_> for ItemSets {
     type Item = super::item_no_lookahead::Item;
     type ItemSet = super::item_no_lookahead::ItemSet;
     fn item_sets(&self) -> &[Self::ItemSet] { &self.sets }
-
     fn rules(&self) -> &[Rule] {
-        todo!()
+        &self.rules
     }
+    fn ordering_map(&self) -> &[Vec<(MixedChar, usize)>] {
+        self.ordering_map.as_slice()
+    }
+
 }
 
 
@@ -49,11 +53,7 @@ impl ItemSets {
         let mut first_item = ItemSet::new();
         let mut index = 0;
         first_item.add_kernel(&self.rules[0], 0, 0);
-        let closures: Vec<usize> = rule_graph.gets_rule(first_item.symbols.iter().filter_map(|symbol| symbol.try_into().ok()));
-
-        for closure in &closures {
-            first_item.add_rule(&self.rules[*closure], 0, *closure);
-        }
+        first_item.add_non_kernel(&rule_graph, &self.rules);
         self.sets.push(first_item);
         loop {
             let Some(cur_item) = self.sets.get(index).cloned() else {
@@ -64,10 +64,7 @@ impl ItemSets {
             for transition_char in symbols.iter(){
                 let new_itemset: Option<ItemSet> = cur_item.transitions(*transition_char, &self.rules);
                 if let Some(mut new_itemset) = new_itemset {
-                    let non_kernels: Vec<usize> = rule_graph.gets_rule(new_itemset.symbols.iter().filter_map(|symbol| symbol.try_into().ok()));
-                    for non_kernel in  non_kernels.iter(){
-                        new_itemset.add_rule(&self.rules[*non_kernel], 0, *non_kernel);
-                    }
+                    new_itemset.add_non_kernel(&rule_graph, &self.rules);
                     if let Some(new_index) = itemmaps.get(&new_itemset) {
                         next_val.push((transition_char.clone(), *new_index));
                         continue;

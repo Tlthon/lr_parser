@@ -1,5 +1,8 @@
 use std::collections::BTreeSet;
+use std::iter;
+use crate::first_follow::Follow;
 use crate::itemset::Item as _;
+use crate::rule_depend::RuleGraph;
 use crate::syntax::{MixedChar, Rule, Terminal};
 
 #[derive(Hash, PartialEq, Eq, Clone, Debug, PartialOrd, Ord)]
@@ -127,8 +130,43 @@ impl ItemSet {
         })
     }
 
-    pub fn kernel_follow(&self) -> impl Iterator<Item = (usize, Terminal)> + '_{
+    pub fn kernel_follow<'a>(&'a self, rules: &'a [Rule]) -> impl Iterator<Item = (usize, Terminal)> + 'a{
         self.items.iter().filter(|item| item.kernel)
+            .filter(|item| item.is_end(rules))
             .map(|kernel| (kernel.rule_number, kernel.follow))
+    }
+
+    fn empty_follow<'a>(&'a self) -> impl Iterator<Item = (usize, Terminal)> + 'a {
+        iter::empty()
+    }
+
+    pub(super) fn merge(&mut self, other: Self) {
+        for item in other.items {
+            self.items.insert(item);
+        }
+        for symbol in other.symbols {
+            self.symbols.insert(symbol);
+        }
+    }
+
+    pub(super) fn add_non_kernel(&mut self, rule_graph: &RuleGraph, rules: &[Rule], follows: &Follow, prev: Option<&ItemSet>) {
+        let non_kernels: Vec<usize> = rule_graph.gets_rule(self.symbols.iter().filter_map(|symbol| symbol.try_into().ok()));
+        for non_kernel in non_kernels.iter() {
+            let kernels = self.items.iter().map(|item| &item.rule_number);
+            let output = rules[*non_kernel].clause;
+            let Some(prev_set) = prev else {
+                let follow_set = follows.get_filtered(&output, kernels.chain(&non_kernels), iter::empty());
+                self.add_rule(&rules[*non_kernel], 0, *non_kernel, &follow_set);
+                continue
+            };
+            let follow_set = follows.get_filtered(&output, kernels.chain(&non_kernels), prev_set.kernel_follow(rules));
+            self.add_rule(&rules[*non_kernel], 0, *non_kernel, &follow_set)
+        }
+    }
+
+    pub(super) fn get_non_kernel(&self, rule_graph: &RuleGraph, rules: &[Rule], follows: &Follow, prev: Option<&ItemSet>) -> Self{
+        let mut next = self.clone();
+        next.add_non_kernel(rule_graph, rules, follows, prev);
+        next
     }
 }

@@ -6,13 +6,13 @@ mod item_lookahead;
 
 mod display;
 
-
+use core::fmt;
 pub use lr_one::ItemSets as LROneItemSets;
 pub use lr_zero::ItemSets as LRZeroItemSets;
 use crate::syntax::{MixedChar, Rule, Variable};
 
 pub trait Item <'display>{
-    type Display;
+    type Display: fmt::Display;
     fn shift(&self) -> Self;
     fn symbol(&self, rules: &[Rule]) -> Option<MixedChar>;
     fn is_end(&self, rules: &[Rule]) -> bool;
@@ -34,4 +34,13 @@ pub trait ItemSets<'a>  {
 
     fn item_sets(&self) -> &[Self::ItemSet];
     fn rules(&self) -> &[Rule];
+
+    fn ordering_map(&self) -> &[Vec<(MixedChar, usize)>];
+
+    fn len(&self) -> usize {
+        self.item_sets().len()
+    }
 }
+
+pub trait LookaheadItemSets<'a>: ItemSets<'a, Item = item_lookahead::Item, ItemSet = item_lookahead::ItemSet> {}
+// pub type LookaheadItemSets<'a> = impl ItemSets<'a, Item = item_lookahead::Item, ItemSet = item_lookahead::ItemSet>;

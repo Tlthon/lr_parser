@@ -1,5 +1,7 @@
 #![allow(dead_code)]
 
+extern crate core;
+
 use std::{env, fs};
 
 use prettytable::{Cell, Row, Table};
@@ -21,8 +23,12 @@ fn main() {
     println!("read rule from file: {file_path}");
 
     let args: Vec<String> = env::args().collect();
-    match args.get(1) {
-        Some(input) if input == "lr_zero" => lr_zero(file_path),
+    let runtype = args.get(1).map(|x| x.as_str());
+    // if Some("lr_zero") == runtype
+    match runtype {
+        Some("lr_zero") => lr_zero(file_path),
+        Some("lalr_one")=> lalr_one(file_path),
+
         _ => lr_one(file_path),
     }
 }
@@ -37,6 +43,20 @@ fn lr_zero(file_path: &str) {
     }
 
     itemsets.generate_next();
+    let machine = StateMachine::from_itemset(&itemsets);
+    run_machine(&itemsets, machine);
+}
+
+fn lalr_one(file_path: &str) {
+    use crate::itemset::LROneItemSets;
+    use parsing_table::lr_one::StateMachine;
+    let mut itemsets = LROneItemSets::new('E');
+
+    for line in fs::read_to_string(file_path).unwrap().lines() {
+        itemsets.add_from_string(line);
+    }
+
+    itemsets.generate_lalr();
     let machine = StateMachine::from_itemset(&itemsets);
     run_machine(&itemsets, machine);
 }
