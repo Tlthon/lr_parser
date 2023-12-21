@@ -1,4 +1,4 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
 use std::iter;
 use crate::first_follow::Follow;
 use crate::itemset::Item as _;
@@ -63,6 +63,19 @@ impl<'item> super::ItemSet<'item> for ItemSet {
     type Item = Item;
     type ItemIterator = std::collections::btree_set::Iter<'item, Self::Item>;
     fn items(&'item self) -> Self::ItemIterator { self.items.iter() }
+
+    fn reduce_reduce_conflict<'a>(&'a self, rules: &'a [Rule]) -> Vec<(&'a Rule, &'a Rule)> {
+        let mut map:HashMap<Terminal, &Rule> = HashMap::new();
+        let mut out = vec![];
+
+        for (rule, follow) in self.reduce(&rules) {
+            if let Some(exist_rule) = map.get(&follow) {
+                out.push((*exist_rule, rule));
+            }
+            map.insert(follow, rule);
+        }
+        out
+    }
 }
 
 impl ItemSet {
@@ -125,10 +138,10 @@ impl ItemSet {
         return None;
     }
 
-    pub fn reduce<'a>(&'a self, rules:&'a [Rule]) -> impl Iterator<Item = (Rule, Terminal)> + 'a {
+    pub fn reduce<'a>(&'a self, rules:&'a [Rule]) -> impl Iterator<Item = (&Rule, Terminal)> + 'a {
         self.items.iter().filter_map(|item| {
             match item.is_end(rules) {
-                true => Some((rules[item.rule_number].clone(), item.follow)),
+                true => Some((&rules[item.rule_number], item.follow)),
                 false => None,
             }
         })

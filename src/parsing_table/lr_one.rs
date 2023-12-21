@@ -50,9 +50,9 @@ impl<'a> super::IStateMachine<'a> for StateMachine {
         for (id, set) in sets.sets.iter().enumerate() {
             for (rule, follow) in set.reduce(&sets.rules) {
                 if let Some(current_rule) = &machine.states[id].reduce.get(&follow){
-                    println!("Found reduce-reduce conflict in state {} between rule {} and {}", id, current_rule, rule)
+                    continue;
                 }
-                machine.states[id].reduce.insert(follow, rule);
+                machine.states[id].reduce.insert(follow, rule.clone());
             }
         }
         machine

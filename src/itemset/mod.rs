@@ -7,6 +7,7 @@ mod item_lookahead;
 mod display;
 
 use core::fmt;
+use std::vec;
 pub use lr_one::ItemSets as LROneItemSets;
 pub use lr_zero::ItemSets as LRZeroItemSets;
 use crate::syntax::{MixedChar, Rule};
@@ -26,6 +27,10 @@ pub trait ItemSet <'item_iterator>
     type Item: Item<'item_iterator> + 'item_iterator ;
     type ItemIterator: Iterator<Item = &'item_iterator Self::Item>;
     fn items(&'item_iterator self) -> Self::ItemIterator;
+    fn reduce_reduce_conflict<'a>(&'a self, rules: &'a [Rule]) -> Vec<(&'a Rule, &'a Rule)>;
+
+    // fn reduce_reduce_conflict<Iter>(&self, rules: &[Rule]) -> Iter
+    //     where Iter: Iterator<Item = (&Rule, &Rule)>;
 }
 
 pub trait ItemSets<'a>  {

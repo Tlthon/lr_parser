@@ -54,6 +54,14 @@ impl<'item_iterator> super::ItemSet<'item_iterator> for ItemSet {
     type Item = Item;
     type ItemIterator = std::collections::btree_set::Iter<'item_iterator, Item>;
     fn items(&'item_iterator self) -> Self::ItemIterator { self.items.iter() }
+    fn reduce_reduce_conflict<'a>(&'a self, rules: &'a [Rule]) -> Vec<(&'a Rule, &'a Rule)> {
+        let mut r = self.reduce(rules);
+        let Some(first) = r.next() else {
+            return vec![]
+        };
+        r.map(|further| (first, further)).collect()
+    }
+
 }
 
 impl ItemSet {
@@ -108,10 +116,10 @@ impl ItemSet {
         return None;
     }
 
-    pub fn reduce<'a>(&'a self, rules:&'a [Rule]) -> impl Iterator<Item = Rule> + 'a {
+    pub fn reduce<'a>(&'a self, rules:&'a [Rule]) -> impl Iterator<Item = &Rule> + 'a {
         self.items.iter().filter_map(|item| {
             match item.is_end(rules) {
-                true => Some(rules[item.rule_number].clone()),
+                true => Some(&rules[item.rule_number]),
                 false => None,
             }
         })
@@ -132,7 +140,6 @@ impl ItemSet {
         }
         next
     }
-
 }
 use super::item_lookahead::ItemSet as ItemSetLookahead;
 
