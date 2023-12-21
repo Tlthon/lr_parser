@@ -1,6 +1,5 @@
 # These rules are used to determined whether an algorithm is lr(1) or lalr(1) if it was lalr(1), there would be a reduce-reduce conflict
-E:E+M
-E:M
-M:M*M
-M:(E)
-M:n
+E:aAc
+E:aBcd
+A:z
+B:z

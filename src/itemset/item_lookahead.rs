@@ -1,5 +1,8 @@
-use std::collections::BTreeSet;
+use std::collections::{BTreeSet, HashMap};
+use std::iter;
+use crate::first_follow::Follow;
 use crate::itemset::Item as _;
+use crate::rule_depend::RuleGraph;
 use crate::syntax::{MixedChar, Rule, Terminal};
 
 #[derive(Hash, PartialEq, Eq, Clone, Debug, PartialOrd, Ord)]
@@ -44,6 +47,10 @@ impl Item {
     }
 
     pub fn follow(&self) -> Terminal {self.follow}
+
+    fn rule_len(&self, rules: &[Rule]) -> usize {
+        rules[self.rule_number].output.data.len()
+    }
 }
 
 #[derive(Hash,Eq,PartialEq,Clone, Debug)]
@@ -56,6 +63,19 @@ impl<'item> super::ItemSet<'item> for ItemSet {
     type Item = Item;
     type ItemIterator = std::collections::btree_set::Iter<'item, Self::Item>;
     fn items(&'item self) -> Self::ItemIterator { self.items.iter() }
+
+    fn reduce_reduce_conflict<'a>(&'a self, rules: &'a [Rule]) -> Vec<(&'a Rule, &'a Rule)> {
+        let mut map:HashMap<Terminal, &Rule> = HashMap::new();
+        let mut out = vec![];
+
+        for (rule, follow) in self.reduce(&rules) {
+            if let Some(exist_rule) = map.get(&follow) {
+                out.push((*exist_rule, rule));
+            }
+            map.insert(follow, rule);
+        }
+        out
+    }
 }
 
 impl ItemSet {
@@ -118,17 +138,56 @@ impl ItemSet {
         return None;
     }
 
-    pub fn reduce<'a>(&'a self, rules:&'a [Rule]) -> impl Iterator<Item = (Rule, Terminal)> + 'a {
+    pub fn reduce<'a>(&'a self, rules:&'a [Rule]) -> impl Iterator<Item = (&Rule, Terminal)> + 'a {
         self.items.iter().filter_map(|item| {
             match item.is_end(rules) {
-                true => Some((rules[item.rule_number].clone(), item.follow)),
+                true => Some((&rules[item.rule_number], item.follow)),
                 false => None,
             }
         })
     }
 
-    pub fn kernel_follow(&self) -> impl Iterator<Item = (usize, Terminal)> + '_{
+    pub fn kernel_follow<'a>(&'a self, rules: &'a [Rule]) -> impl Iterator<Item = (usize, Terminal)> + 'a{
+            self.kernel(rules).map(|kernel| (kernel.rule_number, kernel.follow))
+    }
+
+    pub fn kernel<'a>(&'a self, rules: &'a [Rule]) -> impl Iterator<Item = &Item> + 'a{
         self.items.iter().filter(|item| item.kernel)
-            .map(|kernel| (kernel.rule_number, kernel.follow))
+            .filter(|item| item.rule_len(rules) == item.dot + 1)
+
+    }
+
+    fn empty_follow<'a>(&'a self) -> impl Iterator<Item = (usize, Terminal)> + 'a {
+        iter::empty()
+    }
+
+    pub(super) fn merge(&mut self, other: Self) {
+        for item in other.items {
+            self.items.insert(item);
+        }
+        for symbol in other.symbols {
+            self.symbols.insert(symbol);
+        }
+    }
+
+    pub(super) fn add_non_kernel(&mut self, rule_graph: &RuleGraph, rules: &[Rule], follows: &Follow, prev: Option<&ItemSet>) {
+        let non_kernels: Vec<usize> = rule_graph.gets_rule(self.symbols.iter().filter_map(|symbol| symbol.try_into().ok()));
+        for non_kernel in non_kernels.iter() {
+            let kernels = self.items.iter().map(|item| &item.rule_number);
+            let output = rules[*non_kernel].clause;
+            let Some(prev_set) = prev else {
+                let follow_set = follows.get_filtered(&output, kernels.chain(&non_kernels), iter::once((0, Terminal::end())));
+                self.add_rule(&rules[*non_kernel], 0, *non_kernel, &follow_set);
+                continue
+            };
+            let follow_set = follows.get_filtered(&output, kernels.chain(&non_kernels), prev_set.kernel_follow(rules));
+            self.add_rule(&rules[*non_kernel], 0, *non_kernel, &follow_set)
+        }
+    }
+
+    pub(super) fn get_non_kernel(&self, rule_graph: &RuleGraph, rules: &[Rule], follows: &Follow, prev: Option<&ItemSet>) -> Self{
+        let mut next = self.clone();
+        next.add_non_kernel(rule_graph, rules, follows, prev);
+        next
     }
 }

@@ -1,6 +1,8 @@
 use std::collections::BTreeSet;
+use crate::rule_depend::RuleGraph;
 use crate::syntax::{MixedChar, Rule};
 use super::Item as _;
+use super::ItemSet as _;
 
 pub const DOT: char = '•';
 
@@ -52,6 +54,14 @@ impl<'item_iterator> super::ItemSet<'item_iterator> for ItemSet {
     type Item = Item;
     type ItemIterator = std::collections::btree_set::Iter<'item_iterator, Item>;
     fn items(&'item_iterator self) -> Self::ItemIterator { self.items.iter() }
+    fn reduce_reduce_conflict<'a>(&'a self, rules: &'a [Rule]) -> Vec<(&'a Rule, &'a Rule)> {
+        let mut r = self.reduce(rules);
+        let Some(first) = r.next() else {
+            return vec![]
+        };
+        r.map(|further| (first, further)).collect()
+    }
+
 }
 
 impl ItemSet {
@@ -106,12 +116,43 @@ impl ItemSet {
         return None;
     }
 
-    pub fn reduce<'a>(&'a self, rules:&'a [Rule]) -> impl Iterator<Item = Rule> + 'a {
+    pub fn reduce<'a>(&'a self, rules:&'a [Rule]) -> impl Iterator<Item = &Rule> + 'a {
         self.items.iter().filter_map(|item| {
             match item.is_end(rules) {
-                true => Some(rules[item.rule_number].clone()),
+                true => Some(&rules[item.rule_number]),
                 false => None,
             }
         })
+    }
+
+    pub(super) fn add_non_kernel(&mut self, rule_graph: &RuleGraph, rules: &[Rule]) {
+        let non_kernels: Vec<usize> = rule_graph.gets_rule(self.symbols.iter().filter_map(|symbol| symbol.try_into().ok()));
+        for non_kernel in  non_kernels.iter(){
+            self.add_rule(&rules[*non_kernel], 0, *non_kernel);
+        }
+    }
+
+    pub(super) fn get_non_kernel(&self, rule_graph: &RuleGraph, rules: &[Rule]) -> Self{
+        let mut next = self.clone();
+        let non_kernels: Vec<usize> = rule_graph.gets_rule(self.symbols.iter().filter_map(|symbol| symbol.try_into().ok()));
+        for non_kernel in  non_kernels.iter(){
+            next.add_rule(&rules[*non_kernel], 0, *non_kernel);
+        }
+        next
+    }
+}
+use super::item_lookahead::ItemSet as ItemSetLookahead;
+
+impl From<&ItemSetLookahead> for ItemSet {
+    fn from(value: &ItemSetLookahead) -> Self {
+        let mut s: Self = Self::new();
+        for item in value.items() {
+            s.items.insert(Item{kernel: item.kernel(), rule_number: item.rule_number, dot: item.dot()});
+        }
+        let items = value.items()
+            .map( |item| {Item{kernel: item.kernel(), rule_number: item.rule_number, dot: item.dot()}} )
+            .collect();
+        let symbols = value.symbols.clone();
+        Self{ items, symbols }
     }
 }

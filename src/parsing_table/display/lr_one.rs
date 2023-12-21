@@ -1,6 +1,6 @@
 
 use std::fmt::Display;
-use crate::itemset::LROneItemSets;
+use crate::itemset::{ItemSet as _, ItemSets as _, LROneItemSets};
 use crate::parsing_table::lr_one::{State, StateMachine};
 use crate::syntax::MixedChar;
 use crate::syntax;
@@ -19,12 +19,12 @@ impl<'a> StateMachineDisplay<'a> {
 
 impl<'a> Display for StateMachineDisplay<'a> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        for (index, state) in self.states.iter().enumerate(){
+        for (index, (state, itemset)) in self.states.iter().zip(&self.sets.sets).enumerate(){
             write!(f, "state {}\n", index)?;
-            for item in &self.sets.sets[index].items {
-                // if !item.kernel() {
-                //     continue;
-                // }
+            for item in &itemset.items {
+                if !item.kernel() {
+                    continue;
+                }
                 f.write_str("    ")?;
                 item.display(&self.sets.rules).fmt(f)?;
                 if item.kernel() {
@@ -51,10 +51,9 @@ impl<'a> Display for StateMachineDisplay<'a> {
 
                     continue;
                 }
-                if let Some(current_rule) = state.reduce.get(&follow){
-                    if !std::ptr::eq(current_rule, rule) {
-                        write!(f, "    reduce-reduce conflict between rule {} and {}\n", current_rule, rule)?;
-                    }
+                for (rule1, rule2) in itemset.reduce_reduce_conflict(self.sets.rules()) {
+                    write!(f, "    reduce-reduce between rule {}and {}\n", rule1, rule2)?;
+                    write!(f, "        Favor rule {}over rule {}\n", rule1, rule2)?;
                 }
 
                 let reduced_var = rule.clause;
