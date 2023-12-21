@@ -3,7 +3,7 @@ use crate::rule_depend::RuleGraph;
 use crate::{first_follow, syntax};
 use crate::itemset::item_lookahead::ItemSet;
 use crate::syntax::{MixedChar, Rule};
-use crate::syntax::Variable;
+
 
 // mod display;
 
@@ -67,6 +67,7 @@ impl ItemSets {
             for transition_char in symbols.iter(){
                 let new_itemset: Option<ItemSet> = cur_item.transitions(*transition_char, &self.rules);
                 if let Some(mut new_itemset) = new_itemset {
+                    // println!("{} {:?}",index, cur_item.kernel(&self.rules).collect::<Vec<_>>());
                     new_itemset.add_non_kernel(&rule_graph, &self.rules, &follows, Some(&cur_item));
                     if let Some(new_index) = itemmaps.get(&new_itemset) {
                         next_val.push((transition_char.clone(), *new_index));

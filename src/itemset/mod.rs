@@ -9,7 +9,7 @@ mod display;
 use core::fmt;
 pub use lr_one::ItemSets as LROneItemSets;
 pub use lr_zero::ItemSets as LRZeroItemSets;
-use crate::syntax::{MixedChar, Rule, Variable};
+use crate::syntax::{MixedChar, Rule};
 
 pub trait Item <'display>{
     type Display: fmt::Display;

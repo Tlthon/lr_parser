@@ -1,6 +1,5 @@
 use std::collections::{HashMap};
 use crate::itemset::item_no_lookahead::ItemSet;
-use crate::itemset::ItemSets as _;
 use crate::rule_depend::RuleGraph;
 
 use crate::syntax::{MixedChar, Rule};

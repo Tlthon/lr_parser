@@ -1,7 +1,7 @@
 use crate::{syntax::{Rule, Terminal, Variable}};
 
-use std::collections::{HashSet as Set, HashSet};
-use std::env::var;
+use std::collections::{HashSet as Set};
+
 use std::iter;
 use once_cell::sync::Lazy;
 use crate::data_structure::map_set::MapSet;

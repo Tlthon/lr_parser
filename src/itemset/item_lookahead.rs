@@ -47,6 +47,10 @@ impl Item {
     }
 
     pub fn follow(&self) -> Terminal {self.follow}
+
+    fn rule_len(&self, rules: &[Rule]) -> usize {
+        rules[self.rule_number].output.data.len()
+    }
 }
 
 #[derive(Hash,Eq,PartialEq,Clone, Debug)]
@@ -131,9 +135,13 @@ impl ItemSet {
     }
 
     pub fn kernel_follow<'a>(&'a self, rules: &'a [Rule]) -> impl Iterator<Item = (usize, Terminal)> + 'a{
+            self.kernel(rules).map(|kernel| (kernel.rule_number, kernel.follow))
+    }
+
+    pub fn kernel<'a>(&'a self, rules: &'a [Rule]) -> impl Iterator<Item = &Item> + 'a{
         self.items.iter().filter(|item| item.kernel)
-            .filter(|item| item.is_end(rules))
-            .map(|kernel| (kernel.rule_number, kernel.follow))
+            .filter(|item| item.rule_len(rules) == item.dot + 1)
+
     }
 
     fn empty_follow<'a>(&'a self) -> impl Iterator<Item = (usize, Terminal)> + 'a {
