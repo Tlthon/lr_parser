@@ -49,7 +49,7 @@ impl<'a> super::IStateMachine<'a> for StateMachine {
 
         for (id, set) in sets.sets.iter().enumerate() {
             for (rule, follow) in set.reduce(&sets.rules) {
-                if let Some(current_rule) = &machine.states[id].reduce.get(&follow){
+                if let Some(_current_rule) = &machine.states[id].reduce.get(&follow){
                     continue;
                 }
                 machine.states[id].reduce.insert(follow, rule.clone());
