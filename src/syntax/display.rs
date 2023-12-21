@@ -1,4 +1,4 @@
-use std::fmt::{Debug, Display};
+use std::fmt::{Debug, Display, Formatter};
 use crate::syntax::{END_TERMINAL, END_VARIABLE, MixedChar, MixedString, Rule, Terminal, TerminalString, Variable};
 
 macro_rules! write_pad {
@@ -114,6 +114,12 @@ impl Display for Rule {
         write!(f, "{}->", self.clause)?;
         write!(f, "{}", self.output)?;
         Ok(())
+    }
+}
+
+impl Debug for Rule {
+    fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
+        Display::fmt(self, f)
     }
 }
 

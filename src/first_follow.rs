@@ -1,7 +1,8 @@
 use crate::{syntax::{Rule, Terminal, Variable}};
 
-use std::collections::{HashSet as Set};
+use std::collections::{HashSet as Set, HashSet};
 use std::env::var;
+use std::iter;
 use once_cell::sync::Lazy;
 use crate::data_structure::map_set::MapSet;
 use crate::data_structure::JoinAble;
@@ -69,6 +70,7 @@ impl Follow {
         let mut rule_track: MapSet<Variable, usize> = MapSet::default();
 
         let mut map: MapSet<Variable, Terminal, MapSet<usize, Terminal>> = MapSet::default();
+        map.add(Variable::accept(), (0, iter::once(Terminal::end()).collect()));
         for (rule_id, rule) in rules.iter().enumerate(){
             let clause = rule.clause;
             for (id, variable) in rule.output.data.iter().enumerate().filter_map(|(id, char)| Some((id, char.try_into().ok()?))) {

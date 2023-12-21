@@ -41,6 +41,7 @@ fn check_edges(node_group : &[Set<usize>], rules: &[Rule], variables: &[Variable
 }
 static EMPTY_USIZE:Lazy<Set<usize>> = Lazy::new(|| Set::default());
 
+#[derive(Debug)]
 pub struct RuleGraph{
     node_group: Vec<Set<usize>>,
     rules: Vec<Rule>,

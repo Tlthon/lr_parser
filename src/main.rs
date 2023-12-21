@@ -72,6 +72,7 @@ fn lr_one(file_path: &str) {
     }
 
     itemsets.generate_next();
+    println!("{}", &itemsets);
     let machine = StateMachine::from_itemset(&itemsets);
     run_machine(&itemsets, machine);
 }

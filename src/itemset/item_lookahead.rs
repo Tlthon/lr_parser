@@ -155,7 +155,7 @@ impl ItemSet {
             let kernels = self.items.iter().map(|item| &item.rule_number);
             let output = rules[*non_kernel].clause;
             let Some(prev_set) = prev else {
-                let follow_set = follows.get_filtered(&output, kernels.chain(&non_kernels), iter::empty());
+                let follow_set = follows.get_filtered(&output, kernels.chain(&non_kernels), iter::once((0, Terminal::end())));
                 self.add_rule(&rules[*non_kernel], 0, *non_kernel, &follow_set);
                 continue
             };

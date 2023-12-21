@@ -1,8 +1,9 @@
-use std::collections::{HashMap};
+use std::collections::{HashMap, HashSet};
 use crate::rule_depend::RuleGraph;
 use crate::{first_follow, syntax};
 use crate::itemset::item_lookahead::ItemSet;
 use crate::syntax::{MixedChar, Rule};
+use crate::syntax::Variable;
 
 // mod display;
 
@@ -26,7 +27,9 @@ impl super::LookaheadItemSets<'_> for ItemSets {}
 
 impl ItemSets {
     pub fn new(last_variable: char) -> Self {
-        Self { rules: vec![Rule::end(last_variable)], sets: Vec::default(), ordering_map: Vec::default() }
+        let mut first_rule = Rule::new(syntax::END_VARIABLE);
+        first_rule.add_variable(last_variable);
+        Self { rules: vec![first_rule], sets: Vec::default(), ordering_map: Vec::default() }
     }
     pub fn add_rule(&mut self, rule: Rule) {
         self.rules.push(rule);
@@ -50,7 +53,7 @@ impl ItemSets {
         let rule_graph = RuleGraph::new(self.rules.clone());
         let mut first_item = ItemSet::new();
         let mut index = 0;
-        first_item.add_kernel(&self.rules[0], 0, 0, &[syntax::Terminal::epsilon()]);
+        first_item.add_kernel(&self.rules[0], 0, 0, &[syntax::Terminal::end()]);
         let first = first_follow::First::from_rule(&self.rules);
         let follows = first_follow::Follow::new(&first, &self.rules);
         first_item.add_non_kernel(&rule_graph, &self.rules, &follows, None);
@@ -104,7 +107,7 @@ impl ItemSets {
 
         {
             let mut first_item = ItemSet::new();
-            first_item.add_kernel(&self.rules[0], 0, 0, &[syntax::Terminal::epsilon()]);
+            first_item.add_kernel(&self.rules[0], 0, 0, &[syntax::Terminal::end()]);
             track_kernel((&first_item).into(), 0);
             first_item.add_non_kernel(&rule_graph, &self.rules, &follows, None);
             sets.push(first_item);
@@ -137,32 +140,42 @@ impl ItemSets {
             index += 1;
         }
         let mut translation = vec![];
-        let mut i = 0;
-        for same_kernel in same_kernels {
-            let (outer, into) = same_kernel;
-            while i < outer {
-                translation.push(i);
-                self.sets.push(sets[i].clone());
-                i += 1;
+        let mut unuseds = HashSet::new();
+        let mut j = 0;
+
+        for (outer, into) in same_kernels {
+            unuseds.insert(outer);
+            while translation.len() < outer {
+                translation.push(j);
+                j+=1;
             }
-            i+=1;
-            let prev = prev[outer].unwrap(); // unwrap will never fall otherwise it wouldn't be in same_kernels
+            translation.push(translation[into]);
             let old_itemset = sets[outer].clone();
             sets[into].merge(old_itemset);
-            let a = ordering_map[prev][&outer];
-            ordering_map[prev].remove(&outer);
-            ordering_map[prev].insert(into, a);
         }
-        while i < sets.len() {
-            translation.push(i);
-            i += 1;
+        while translation.len() < sets.len() {
+            translation.push(j);
+            j += 1;
+        }
+        let mut temp = vec![];
+        for (id, ordering_map) in ordering_map.iter().enumerate() {
+            if unuseds.contains(&id) {
+                continue;
+            }
+
+            self.ordering_map.push(ordering_map.iter().map(|(index, j)|
+                (*j,translation[*index])).collect()
+            );
+
+            temp.push(ordering_map.iter().map(|(index, j)| (*j,*index)).collect::<Vec<_>>());
         }
 
-        for ordering_map in ordering_map {
-            self.ordering_map.push(ordering_map.iter().map(|(i, j)| (*j,translation[*i])).collect())
+        for (id,set) in sets.iter().enumerate() {
+            if unuseds.contains(&id) {
+                continue;
+            }
+            self.sets.push(set.clone())
         }
-        // self.sets = sets;
-
     }
 
 }
